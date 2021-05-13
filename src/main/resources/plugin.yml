@@ -17,3 +17,4 @@ commands:
     usage: /hass <entity>
     permission: mineassistant.link
 load: POSTWORLD
+api-version: 1.16

@@ -25,15 +25,29 @@ public class HomeAssistant extends WebSocketClient {
      * @param token Long-lived access token
      * @throws URISyntaxException when the URL is invalid
      */
-    HomeAssistant(String url, String token) throws URISyntaxException {
-        super(new URI(url.replaceFirst("^http", "ws")));
+    public HomeAssistant(String url, String token) throws URISyntaxException {
+        super(new URI(
+                (url.endsWith("/") ? url : url + "/") // ensure trailing slash
+                        .replaceFirst("^http", "ws") // use ws(s) instead of http(s)
+                        + "api/websocket"
+        ));
         this.token = token;
         this.logger = Logger.getLogger("Home Assistant");
     }
 
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        logger.info("Socket opened");
+        logger.info("Home Assistant socket opened");
+    }
+
+    @Override
+    public void onClose(int i, String s, boolean b) {
+        logger.info("Home Assistant socket closed");
+    }
+
+    @Override
+    public void onError(Exception e) {
+        logger.warning("Home Assistant socket error: " + e.toString());
     }
 
     @Override
@@ -42,13 +56,13 @@ public class HomeAssistant extends WebSocketClient {
 
         switch (message.get("type").getAsString()) {
             case "auth_required":
-                handleAuthRequired();
+                sendAuth();
                 break;
             case "auth_invalid":
-                logger.warning("Authentication failed: " + message.get("message").getAsString());
+                logger.warning("Home Assistant authentication failed: " + message.get("message").getAsString());
                 break;
             case "auth_ok":
-                logger.info("Successfully authenticated with server");
+                logger.info("Successfully authenticated with Home Assistant");
                 break;
             case "result":
                 handleResult(message);
@@ -59,21 +73,11 @@ public class HomeAssistant extends WebSocketClient {
         }
     }
 
-    @Override
-    public void onClose(int i, String s, boolean b) {
-        logger.info("Socket closed");
-    }
-
-    @Override
-    public void onError(Exception e) {
-        logger.warning("Socket error: " + e.toString());
-    }
-
     /**
      * Send our access token to the server.
      */
-    private void handleAuthRequired() {
-        logger.fine("Server is requesting authentication...");
+    private void sendAuth() {
+        logger.fine("Home Assistant is requesting authentication...");
         final JsonObject message = new JsonObject();
         message.add("type", new JsonPrimitive("auth"));
         message.add("access_token", new JsonPrimitive(token));
