@@ -1,10 +1,12 @@
 package net.robiotic.mineassistant;
 
+import com.google.common.base.Splitter;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class BlockUpdateHandler implements Listener {
@@ -26,6 +28,17 @@ public class BlockUpdateHandler implements Listener {
         }
 
         final String haEntity = block.getMetadata(R.LINK_META_KEY).get(0).asString();
-        ha.setState(haEntity, block.isBlockPowered()); // TODO: only reads false?
+        String blockData = block.getBlockData().getAsString();
+        blockData = blockData.substring(blockData.indexOf("[") + 1);
+        blockData = blockData.substring(0, blockData.indexOf("]"));
+        final Map<String, String> result = Splitter.on(",")
+                .trimResults()
+                .withKeyValueSeparator(
+                        Splitter.on("=")
+                                .limit(2)
+                                .trimResults())
+                .split(blockData);
+
+        ha.setState(haEntity, Boolean.parseBoolean(result.get("powered")));
     }
 }
