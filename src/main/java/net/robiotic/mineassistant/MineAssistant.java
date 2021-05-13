@@ -1,5 +1,6 @@
 package net.robiotic.mineassistant;
 
+import com.google.gson.JsonObject;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -10,10 +11,12 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URISyntaxException;
+import java.util.HashMap;
 
 public class MineAssistant extends JavaPlugin {
     private HomeAssistant ha;
     private BlockUpdateHandler updateHandler;
+    private final HashMap<String, Block> registeredEntities = new HashMap<>();
 
     @Override
     public void onLoad() {
@@ -24,7 +27,7 @@ public class MineAssistant extends JavaPlugin {
         final String token = config.getString("ha_token", "");
 
         try {
-            ha = new HomeAssistant(url, token);
+            ha = new HomeAssistant(url, token, this);
         } catch (URISyntaxException uriSyntaxException) {
             getLogger().warning("Invalid URL");
         }
@@ -103,5 +106,21 @@ public class MineAssistant extends JavaPlugin {
         target.setMetadata(R.LINK_META_KEY, new FixedMetadataValue(this, haEntity));
         getLogger().info(String.format("%s linked %s to Home Assistant/%s", player.getDisplayName(), target.getBlockData().getAsString(), haEntity));
         return true;
+    }
+
+    public void checkEvent(JsonObject event) {
+        if (event.get("event_type").getAsString().equals("state_changed")) {
+            JsonObject evData = event.getAsJsonObject("data");
+            // now search the hashmap for entity IDs that we have added
+            String entityID = evData.get("entity_id").getAsString();
+            if (registeredEntities.containsKey(entityID)) {
+                Block tgb = registeredEntities.get(entityID);
+                String newState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
+                getLogger().info(entityID + " was just set to " + newState + " by HA");
+//                setActive(tgb, Switch.class, aSwitch -> aSwitch.setPowered(true));
+                getLogger().info(tgb.toString());
+
+            }
+        }
     }
 }

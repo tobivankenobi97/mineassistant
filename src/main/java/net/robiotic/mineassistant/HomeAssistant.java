@@ -20,13 +20,14 @@ public class HomeAssistant extends WebSocketClient {
     private final Logger logger;
     private final HashMap<Integer, Void> pendingChanges = new HashMap<>();
     private int id = 0;
+    private final MineAssistant ma;
 
     /**
      * @param url   Instance URL
      * @param token Long-lived access token
      * @throws URISyntaxException when the URL is invalid
      */
-    public HomeAssistant(String url, String token) throws URISyntaxException {
+    public HomeAssistant(String url, String token, MineAssistant ma) throws URISyntaxException {
         super(new URI(
                 (url.endsWith("/") ? url : url + "/") // ensure trailing slash
                         .replaceFirst("^http", "ws") // use ws(s) instead of http(s)
@@ -34,6 +35,7 @@ public class HomeAssistant extends WebSocketClient {
         ));
         this.token = token;
         this.logger = Logger.getLogger("Home Assistant");
+        this.ma = ma;
     }
 
     @Override
@@ -64,14 +66,14 @@ public class HomeAssistant extends WebSocketClient {
                 break;
             case "auth_ok":
                 logger.info("Successfully authenticated with Home Assistant");
+                subscribe();
                 break;
             case "result":
                 logger.info("RESULT: " + s);
                 handleResult(message);
                 break;
             case "event":
-                logger.info("EVENT: " + s);
-                handleEvent(message);
+                ma.checkEvent(message.getAsJsonObject("event"));
                 break;
         }
     }
@@ -104,6 +106,16 @@ public class HomeAssistant extends WebSocketClient {
         logger.fine("...sent token");
     }
 
+    private void subscribe() {
+        final JsonObject message = new JsonObject();
+        message.add("id", new JsonPrimitive(++id));
+        message.add("type", new JsonPrimitive("subscribe_events"));
+        message.add("event_type", new JsonPrimitive("state_changed"));
+
+        final String json = gson.toJson(message);
+        send(json);
+    }
+
     private void handleResult(JsonObject message) {
         final boolean success = message.get("success").getAsBoolean();
         final int id = message.get("id").getAsInt();
@@ -113,9 +125,5 @@ public class HomeAssistant extends WebSocketClient {
         }
 
         pendingChanges.remove(id);
-    }
-
-    private void handleEvent(JsonObject message) {
-
     }
 }
