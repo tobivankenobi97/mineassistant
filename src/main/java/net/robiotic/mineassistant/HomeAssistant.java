@@ -1,0 +1,98 @@
+package net.robiotic.mineassistant;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.logging.Logger;
+
+/**
+ * A WebSocket connection to Home Assistant.
+ */
+public class HomeAssistant extends WebSocketClient {
+    private final Gson gson = new Gson();
+    private final String token;
+    private final Logger logger;
+    private final HashMap<Integer, Void> pendingChanges = new HashMap<>();
+
+    /**
+     * @param url   Instance URL
+     * @param token Long-lived access token
+     * @throws URISyntaxException when the URL is invalid
+     */
+    HomeAssistant(String url, String token) throws URISyntaxException {
+        super(new URI(url.replaceFirst("^http", "ws")));
+        this.token = token;
+        this.logger = Logger.getLogger("Home Assistant");
+    }
+
+    @Override
+    public void onOpen(ServerHandshake serverHandshake) {
+        logger.info("Socket opened");
+    }
+
+    @Override
+    public void onMessage(String s) {
+        final JsonObject message = gson.fromJson(s, JsonObject.class);
+
+        switch (message.get("type").getAsString()) {
+            case "auth_required":
+                handleAuthRequired();
+                break;
+            case "auth_invalid":
+                logger.warning("Authentication failed: " + message.get("message").getAsString());
+                break;
+            case "auth_ok":
+                logger.info("Successfully authenticated with server");
+                break;
+            case "result":
+                handleResult(message);
+                break;
+            case "event":
+                handleEvent(message);
+                break;
+        }
+    }
+
+    @Override
+    public void onClose(int i, String s, boolean b) {
+        logger.info("Socket closed");
+    }
+
+    @Override
+    public void onError(Exception e) {
+        logger.warning("Socket error: " + e.toString());
+    }
+
+    /**
+     * Send our access token to the server.
+     */
+    private void handleAuthRequired() {
+        logger.fine("Server is requesting authentication...");
+        final JsonObject message = new JsonObject();
+        message.add("type", new JsonPrimitive("auth"));
+        message.add("access_token", new JsonPrimitive(token));
+        send(gson.toJson(message));
+        logger.fine("...sent token");
+    }
+
+    private void handleResult(JsonObject message) {
+        final boolean success = message.get("success").getAsBoolean();
+        final int id = message.get("id").getAsInt();
+
+        if (success) {
+            pendingChanges.get(id); // TODO: update block state
+        }
+
+        pendingChanges.remove(id);
+    }
+
+    private void handleEvent(JsonObject message) {
+
+    }
+}

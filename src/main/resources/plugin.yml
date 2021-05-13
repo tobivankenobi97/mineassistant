@@ -1,0 +1,19 @@
+name: MineAssistant
+description: Links Home Assistant to redstone
+main: net.robiotic.mineassistant.MineAssistant
+version: 1.0-SNAPSHOT
+author: klikini
+website: https://gitlab.com/klikini/mineassistant
+permissions:
+  link:
+    description: Allows linking redstone blocks to Home Assistant
+    default: false
+  use:
+    description: Allows changing the state of redstone blocks linked to Home Assistant
+    default: true
+commands:
+  hass:
+    description: Connect a redstone block to Home Assistant
+    usage: /hass <entity>
+    permission: mineassistant.link
+load: POSTWORLD
