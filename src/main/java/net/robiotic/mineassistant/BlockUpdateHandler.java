@@ -7,15 +7,28 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
 
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class BlockUpdateHandler implements Listener {
     private final HomeAssistant ha;
-    private final Logger logger;
+
+    public static boolean isBlockPowered(Block block) {
+        String blockData = block.getBlockData().getAsString();
+        blockData = blockData.substring(blockData.indexOf("[") + 1);
+        blockData = blockData.substring(0, blockData.indexOf("]"));
+
+        final Map<String, String> result = Splitter.on(",")
+                .trimResults()
+                .withKeyValueSeparator(
+                        Splitter.on("=")
+                                .limit(2)
+                                .trimResults())
+                .split(blockData);
+
+        return Boolean.parseBoolean(result.get("powered"));
+    }
 
     public BlockUpdateHandler(HomeAssistant ha) {
         this.ha = ha;
-        logger = Logger.getLogger("Home Assistant Block Update Handler");
     }
 
     @EventHandler
@@ -28,17 +41,6 @@ public class BlockUpdateHandler implements Listener {
         }
 
         final String haEntity = block.getMetadata(R.LINK_META_KEY).get(0).asString();
-        String blockData = block.getBlockData().getAsString();
-        blockData = blockData.substring(blockData.indexOf("[") + 1);
-        blockData = blockData.substring(0, blockData.indexOf("]"));
-        final Map<String, String> result = Splitter.on(",")
-                .trimResults()
-                .withKeyValueSeparator(
-                        Splitter.on("=")
-                                .limit(2)
-                                .trimResults())
-                .split(blockData);
-
-        ha.setState(haEntity, Boolean.parseBoolean(result.get("powered")));
+        ha.setState(haEntity, isBlockPowered(block));
     }
 }
