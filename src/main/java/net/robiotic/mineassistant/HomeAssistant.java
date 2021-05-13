@@ -19,6 +19,7 @@ public class HomeAssistant extends WebSocketClient {
     private final String token;
     private final Logger logger;
     private final HashMap<Integer, Void> pendingChanges = new HashMap<>();
+    private int id = 0;
 
     /**
      * @param url   Instance URL
@@ -65,12 +66,30 @@ public class HomeAssistant extends WebSocketClient {
                 logger.info("Successfully authenticated with Home Assistant");
                 break;
             case "result":
+                logger.info("RESULT: " + s);
                 handleResult(message);
                 break;
             case "event":
+                logger.info("EVENT: " + s);
                 handleEvent(message);
                 break;
         }
+    }
+
+    public void setState(String entity, boolean state) {
+        final JsonObject serviceData = new JsonObject();
+        serviceData.add("entity_id", new JsonPrimitive(entity));
+
+        final JsonObject message = new JsonObject();
+        message.add("id", new JsonPrimitive(++id));
+        message.add("type", new JsonPrimitive("call_service"));
+        message.add("domain", new JsonPrimitive(entity.split("\\.")[0]));
+        message.add("service", new JsonPrimitive("turn_" + (state ? "on" : "off")));
+        message.add("service_data", serviceData);
+
+        final String json = gson.toJson(message);
+        send(json);
+        logger.info(json);
     }
 
     /**

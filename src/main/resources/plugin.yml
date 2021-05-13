@@ -5,10 +5,10 @@ version: 1.0-SNAPSHOT
 author: klikini
 website: https://gitlab.com/klikini/mineassistant
 permissions:
-  link:
+  hass.link:
     description: Allows linking redstone blocks to Home Assistant
     default: false
-  use:
+  hass.use:
     description: Allows changing the state of redstone blocks linked to Home Assistant
     default: true
 commands:
