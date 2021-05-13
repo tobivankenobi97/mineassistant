@@ -8,7 +8,6 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.logging.Logger;
 
 /**
@@ -16,11 +15,18 @@ import java.util.logging.Logger;
  */
 public class HomeAssistant extends WebSocketClient {
     private final Gson gson = new Gson();
-    private final String token;
-    private final Logger logger;
-    private final HashMap<Integer, Void> pendingChanges = new HashMap<>();
-    private int id = 0;
+    private final Logger logger = Logger.getLogger("Home Assistant");
     private final MineAssistant ma;
+
+    /**
+     * Home Assistant long-lived access token.
+     */
+    private final String token;
+
+    /**
+     * ID of the last command sent to Home Assistant.
+     */
+    private int id = 0;
 
     /**
      * @param url   Instance URL
@@ -33,9 +39,9 @@ public class HomeAssistant extends WebSocketClient {
                         .replaceFirst("^http", "ws") // use ws(s) instead of http(s)
                         + "api/websocket"
         ));
-        this.token = token;
-        this.logger = Logger.getLogger("Home Assistant");
+
         this.ma = ma;
+        this.token = token;
     }
 
     @Override
@@ -69,7 +75,6 @@ public class HomeAssistant extends WebSocketClient {
                 subscribe();
                 break;
             case "result":
-                logger.info("RESULT: " + s);
                 handleResult(message);
                 break;
             case "event":
@@ -78,6 +83,11 @@ public class HomeAssistant extends WebSocketClient {
         }
     }
 
+    /**
+     * Change the state of an entity in Home Assistant.
+     * @param entity The ID of the entity to update
+     * @param state The new state (on or off)
+     */
     public void setState(String entity, boolean state) {
         final JsonObject serviceData = new JsonObject();
         serviceData.add("entity_id", new JsonPrimitive(entity));
@@ -89,9 +99,7 @@ public class HomeAssistant extends WebSocketClient {
         message.add("service", new JsonPrimitive("turn_" + (state ? "on" : "off")));
         message.add("service_data", serviceData);
 
-        final String json = gson.toJson(message);
-        send(json);
-        logger.info(json);
+        send(gson.toJson(message));
     }
 
     /**
@@ -106,24 +114,24 @@ public class HomeAssistant extends WebSocketClient {
         logger.fine("...sent token");
     }
 
+    /**
+     * Ask the server to send state updates.
+     */
     private void subscribe() {
         final JsonObject message = new JsonObject();
         message.add("id", new JsonPrimitive(++id));
         message.add("type", new JsonPrimitive("subscribe_events"));
         message.add("event_type", new JsonPrimitive("state_changed"));
-
-        final String json = gson.toJson(message);
-        send(json);
+        send(gson.toJson(message));
     }
 
+    /**
+     * Result of executing a command.
+     */
     private void handleResult(JsonObject message) {
-        final boolean success = message.get("success").getAsBoolean();
-        final int id = message.get("id").getAsInt();
-
-        if (success) {
-            pendingChanges.get(id); // TODO: update block state
+        if (!message.get("success").getAsBoolean()) {
+            final String error = message.getAsJsonObject("error").get("message").getAsString();
+            logger.warning("Home Assistant failed to execute command: " + error);
         }
-
-        pendingChanges.remove(id);
     }
 }
