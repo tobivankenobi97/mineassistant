@@ -2,6 +2,7 @@ package net.robiotic.mineassistant;
 
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -110,13 +111,22 @@ public class MineAssistant extends JavaPlugin {
             return true;
         }
 
-        if (!R.inputBlocks.contains(target.getType()) && !R.outputBlocks.contains(target.getType())) {
-            sender.sendMessage(String.format("Cannot link this block (%s) to Home Assistant", target.getType()));
+        final Material material = target.getType();
+
+        if (!R.inputBlocks.contains(material) && !R.outputBlocks.contains(material)) {
+            sender.sendMessage(String.format("Cannot link this block (%s) to Home Assistant", material));
             return true;
         }
 
         links.add(target, haEntity);
         getLogger().info(String.format("%s linked %s to Home Assistant/%s", player.getDisplayName(), target.getBlockData().getAsString(), haEntity));
+        sender.sendMessage(String.format(
+                "Linked %s as %s '%s'",
+                material.name(),
+                R.inputBlocks.contains(material) ? "input to" : "output of",
+                haEntity
+        ));
+
         return true;
     }
 
