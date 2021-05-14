@@ -112,6 +112,7 @@ public class MineAssistant extends JavaPlugin {
         // TODO: persistent storage
         // TODO: two-way binding
         target.setMetadata(R.LINK_META_KEY, new FixedMetadataValue(this, haEntity));
+        registeredEntities.put (haEntity, target);
         getLogger().info(String.format("%s linked %s to Home Assistant/%s", player.getDisplayName(), target.getBlockData().getAsString(), haEntity));
         return true;
     }
