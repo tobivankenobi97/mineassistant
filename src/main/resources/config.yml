@@ -9,3 +9,24 @@ ha_url: ''
 # Home Assistant long-lived access token
 # For help: https://www.home-assistant.io/docs/authentication/#your-account-profile
 ha_token: ''
+
+# How the plugin detects changes to redstone devices.
+#
+# If set to 'interact', the events are recorded only when a player clicks on the device
+# (such as flipping a switch, pressing a button, etc.)
+# This means that pressure plates will only activate ON, not OFF, and tripwires and the like will not work at all.
+# However, this allows us to track which player activated the device and check whether they have the hass.use
+# permission before allowing the action.
+# This option is SECURE (well, the more secure of the two), and is therefore the DEFAULT.
+#
+# If set to 'redstone', any blocks linked as inputs will control their linked Home Assistant entity when the
+# incoming redstone signal changes. This will still allow levers and buttons to work as before, but without
+# checking the hass.use permission, and you can connect linked blocks to redstone signals. This is dangerous
+# because anyone who has access to the server (including mobs!) can control your devices.
+# This option is FLEXIBLE and COOL because you can use redstone circuits to automate your home,
+# but it is much less secure because these actions can be performed by any player or even without a player present.
+#
+# No matter which option you choose, though especially with 'redstone', we are not responsible for any unwanted
+# Home Assistant actions caused by players, mobs, or anything/anyone else.
+# Both options will still require players to have the hass.link permission to set up new blocks.
+input_mode: interact

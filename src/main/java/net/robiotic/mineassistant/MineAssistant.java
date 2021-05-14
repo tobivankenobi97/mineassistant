@@ -28,6 +28,7 @@ public class MineAssistant extends JavaPlugin {
         final FileConfiguration config = getConfig();
         final String url = config.getString("ha_url", "");
         final String token = config.getString("ha_token", "");
+        final String inputMode = config.getString("input_mode", "interact");
 
         try {
             ha = new HomeAssistant(url, token, this);
@@ -35,7 +36,7 @@ public class MineAssistant extends JavaPlugin {
             getLogger().warning("Invalid URL");
         }
 
-        updateHandler = new BlockUpdateHandler(ha);
+        updateHandler = new BlockUpdateHandler(ha, inputMode);
     }
 
     @Override
