@@ -15,6 +15,7 @@ public class BlockUpdateHandler implements Listener {
     private final HomeAssistant ha;
     private final Logger logger;
     private final String mode;
+    private final LinkStore links;
 
     @SuppressWarnings("UnstableApiUsage")
     public static boolean isBlockPowered(Block block) {
@@ -33,10 +34,11 @@ public class BlockUpdateHandler implements Listener {
         return !Boolean.parseBoolean(result.get("powered"));
     }
 
-    public BlockUpdateHandler(HomeAssistant ha, String mode) {
+    public BlockUpdateHandler(HomeAssistant ha, String mode, LinkStore links) {
         this.ha = ha;
         this.logger = Logger.getLogger("Home Assistant Block Update Handler");
         this.mode = mode;
+        this.links = links;
     }
 
     /**
@@ -59,12 +61,16 @@ public class BlockUpdateHandler implements Listener {
 
         final Block block = event.getClickedBlock();
 
-        if (block == null || !block.hasMetadata(R.LINK_META_KEY) || !R.inputBlocks.contains(block.getType())) {
-            // Not linked or not an input block
-            return;
+        if (block == null || !R.inputBlocks.contains(block.getType())) {
+            return; // Not an input block
         }
 
-        final String haEntity = block.getMetadata(R.LINK_META_KEY).get(0).asString();
+        final String haEntity = links.getEntity(block);
+
+        if (haEntity == null) {
+            return; // Not linked
+        }
+
         final boolean state = isBlockPowered(block);
         ha.setState(haEntity, state);
         logger.info(String.format("%s set Home Assistant/%s = %s", player.getDisplayName(), haEntity, state ? "ON" : "OFF"));
@@ -83,11 +89,16 @@ public class BlockUpdateHandler implements Listener {
 
         final Block block = event.getBlock();
 
-        if (!block.hasMetadata(R.LINK_META_KEY) || !R.inputBlocks.contains(block.getType())) {
-            return; // Not linked or not an input block
+        if (!R.inputBlocks.contains(block.getType())) {
+            return; // Not an input block
         }
 
-        final String haEntity = block.getMetadata(R.LINK_META_KEY).get(0).asString();
+        final String haEntity = links.getEntity(block);
+
+        if (haEntity == null) {
+            return; // Not linked
+        }
+
         ha.setState(haEntity, isBlockPowered(block));
     }
 }

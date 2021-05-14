@@ -13,9 +13,6 @@ abstract class R {
     static final String PERM_LINK = "hass.link";
     static final String PERM_USE = "hass.use";
 
-    /// Name of the block metadata property containing the Home Assistant entity that block is linked to.
-    static final String LINK_META_KEY = "hass:entity";
-
     /// Maximum distance a player can be standing from the block they are linking.
     static final int MAX_TARGET_DIST = 5;
 

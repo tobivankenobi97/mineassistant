@@ -2,6 +2,7 @@ package net.robiotic.mineassistant;
 
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.Command;
@@ -9,17 +10,15 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.List;
 
 public class MineAssistant extends JavaPlugin {
     private HomeAssistant ha;
     private BlockUpdateHandler updateHandler;
-    private final HashMap<String, Block> registeredEntities = new HashMap<>();
+    private final LinkStore links = new LinkStore(getDataFolder());
 
     @Override
     public void onLoad() {
@@ -36,7 +35,7 @@ public class MineAssistant extends JavaPlugin {
             getLogger().warning("Invalid URL");
         }
 
-        updateHandler = new BlockUpdateHandler(ha, inputMode);
+        updateHandler = new BlockUpdateHandler(ha, inputMode, links);
     }
 
     @Override
@@ -45,6 +44,9 @@ public class MineAssistant extends JavaPlugin {
             // Not configured or initialized correctly
             return;
         }
+
+        // Read persisted links
+        links.read();
 
         // Connect to Home Assistant
         ha.connect();
@@ -66,6 +68,9 @@ public class MineAssistant extends JavaPlugin {
             ha.close();
             ha = null;
         }
+
+        // Save links persistently
+        links.commit();
     }
 
     @Override
@@ -110,10 +115,7 @@ public class MineAssistant extends JavaPlugin {
             return true;
         }
 
-        // TODO: persistent storage
-        // TODO: two-way binding
-        target.setMetadata(R.LINK_META_KEY, new FixedMetadataValue(this, haEntity));
-        registeredEntities.put (haEntity, target);
+        links.add(target, haEntity);
         getLogger().info(String.format("%s linked %s to Home Assistant/%s", player.getDisplayName(), target.getBlockData().getAsString(), haEntity));
         return true;
     }
@@ -121,21 +123,32 @@ public class MineAssistant extends JavaPlugin {
     public void checkEvent(JsonObject event) {
         if (event.get("event_type").getAsString().equals("state_changed")) {
             // Home Assistant has flipped something on or off
-            JsonObject evData = event.getAsJsonObject("data");
-            String entityID = evData.get("entity_id").getAsString();
-            // check if we have linked this block previously with the /hass command
-            if (registeredEntities.containsKey(entityID)) {
-                String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
-                String mcState = haState.equals("on") ? "true" : "false";
-                Block targetBlock = registeredEntities.get(entityID);
+            final JsonObject evData = event.getAsJsonObject("data");
+            final String entityID = evData.get("entity_id").getAsString();
+            final String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
+            final String mcState = haState.equals("on") ? "true" : "false";
+            getLogger().info(entityID + " was just set to " + haState + " by HA");
 
-                getLogger().info(entityID + " was just set to " + haState + " by HA");
+            // Iterate through the list of blocks this entity is linked to
+            links.linkedBlocks(entityID, (LinkedBlock link) -> {
+                final World world = getServer().getWorld(link.location.world);
+
+                if (world == null) {
+                    return; // World is not loaded
+                }
+
+                final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
+
+                if (!targetBlock.getType().name().equals(link.material)) {
+                    // Block has been replaced with a different type, so remove it from the persistent store
+                    links.remove(link);
+                }
 
                 // and now for a very cheesy way of rewriting the powered status in the block data string
                 String bdStr = targetBlock.getBlockData().getAsString().replaceAll("powered=true|powered=false", "powered=" + mcState);
                 BlockData newBlockData = Bukkit.createBlockData(bdStr);
                 Bukkit.getScheduler().runTask(this, () -> targetBlock.setBlockData(newBlockData));
-            }
+            });
         }
     }
 }
