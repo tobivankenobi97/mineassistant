@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 
 public class MineAssistant extends JavaPlugin {
     private HomeAssistant ha;
@@ -65,7 +66,12 @@ public class MineAssistant extends JavaPlugin {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        return ha.allEntities;
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length != 1) {
             return false;
         }

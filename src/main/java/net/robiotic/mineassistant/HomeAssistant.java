@@ -1,6 +1,7 @@
 package net.robiotic.mineassistant;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.java_websocket.client.WebSocketClient;
@@ -8,6 +9,7 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 /**
@@ -27,6 +29,17 @@ public class HomeAssistant extends WebSocketClient {
      * ID of the last command sent to Home Assistant.
      */
     private int id = 0;
+
+    /**
+     * ID of the last get_states command sent to Home Assistant.
+     */
+    private int statesId = 0;
+
+    /**
+     * List of all entity IDs.
+     * Used to tab completion.
+     */
+    public ArrayList<String> allEntities = new ArrayList<>();
 
     /**
      * @param url   Instance URL
@@ -72,6 +85,7 @@ public class HomeAssistant extends WebSocketClient {
                 break;
             case "auth_ok":
                 logger.info("Successfully authenticated with Home Assistant");
+                fetchEntities();
                 subscribe();
                 break;
             case "result":
@@ -85,8 +99,9 @@ public class HomeAssistant extends WebSocketClient {
 
     /**
      * Change the state of an entity in Home Assistant.
+     *
      * @param entity The ID of the entity to update
-     * @param state The new state (on or off)
+     * @param state  The new state (on or off)
      */
     public void setState(String entity, boolean state) {
         final JsonObject serviceData = new JsonObject();
@@ -106,12 +121,10 @@ public class HomeAssistant extends WebSocketClient {
      * Send our access token to the server.
      */
     private void sendAuth() {
-        logger.fine("Home Assistant is requesting authentication...");
         final JsonObject message = new JsonObject();
         message.add("type", new JsonPrimitive("auth"));
         message.add("access_token", new JsonPrimitive(token));
         send(gson.toJson(message));
-        logger.fine("...sent token");
     }
 
     /**
@@ -126,12 +139,30 @@ public class HomeAssistant extends WebSocketClient {
     }
 
     /**
+     * Ask the server for a list of all states.
+     * Used for tab completion.
+     */
+    public void fetchEntities() {
+        final JsonObject message = new JsonObject();
+        message.add("id", new JsonPrimitive(statesId = ++id));
+        message.add("type", new JsonPrimitive("get_states"));
+        send(gson.toJson(message));
+    }
+
+    /**
      * Result of executing a command.
      */
     private void handleResult(JsonObject message) {
         if (!message.get("success").getAsBoolean()) {
             final String error = message.getAsJsonObject("error").get("message").getAsString();
             logger.warning("Home Assistant failed to execute command: " + error);
+            return;
+        }
+
+        if (message.get("id").getAsInt() == statesId) {
+            final JsonArray result = message.getAsJsonArray("result");
+            allEntities.clear();
+            result.forEach(r -> allEntities.add(r.getAsJsonObject().get("entity_id").getAsString()));
         }
     }
 }
