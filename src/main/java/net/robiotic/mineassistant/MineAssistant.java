@@ -1,7 +1,9 @@
 package net.robiotic.mineassistant;
 
 import com.google.gson.JsonObject;
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -116,16 +118,21 @@ public class MineAssistant extends JavaPlugin {
 
     public void checkEvent(JsonObject event) {
         if (event.get("event_type").getAsString().equals("state_changed")) {
+            // Home Assistant has flipped something on or off
             JsonObject evData = event.getAsJsonObject("data");
-            // now search the hashmap for entity IDs that we have added
             String entityID = evData.get("entity_id").getAsString();
+            // check if we have linked this block previously with the /hass command
             if (registeredEntities.containsKey(entityID)) {
-                Block tgb = registeredEntities.get(entityID);
-                String newState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
-                getLogger().info(entityID + " was just set to " + newState + " by HA");
-//                setActive(tgb, Switch.class, aSwitch -> aSwitch.setPowered(true));
-                getLogger().info(tgb.toString());
+                String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
+                String mcState = haState.equals("on") ? "true" : "false";
+                Block targetBlock = registeredEntities.get(entityID);
 
+                getLogger().info(entityID + " was just set to " + haState + " by HA");
+
+                // and now for a very cheesy way of rewriting the powered status in the block data string
+                String bdStr = targetBlock.getBlockData().getAsString().replaceAll("powered=true|powered=false", "powered=" + mcState);
+                BlockData newBlockData = Bukkit.createBlockData(bdStr);
+                Bukkit.getScheduler().runTask(this, () -> targetBlock.setBlockData(newBlockData));
             }
         }
     }

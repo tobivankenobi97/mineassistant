@@ -28,7 +28,7 @@ public class BlockUpdateHandler implements Listener {
                                 .trimResults())
                 .split(blockData);
 
-        return Boolean.parseBoolean(result.get("powered"));
+        return !Boolean.parseBoolean(result.get("powered"));
     }
 
     public BlockUpdateHandler(HomeAssistant ha) {
@@ -53,7 +53,7 @@ public class BlockUpdateHandler implements Listener {
         }
 
         final String haEntity = block.getMetadata(R.LINK_META_KEY).get(0).asString();
-        final boolean state = !isBlockPowered(block);
+        final boolean state = isBlockPowered(block);
         ha.setState(haEntity, state);
         logger.info(String.format("%s set Home Assistant/%s = %s", player.getDisplayName(), haEntity, state ? "ON" : "OFF"));
     }
