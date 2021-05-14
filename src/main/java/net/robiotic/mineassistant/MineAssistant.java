@@ -137,7 +137,6 @@ public class MineAssistant extends JavaPlugin {
             final String entityID = evData.get("entity_id").getAsString();
             final String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
             final String mcState = haState.equals("on") ? "true" : "false";
-            getLogger().info(entityID + " was just set to " + haState + " by HA");
 
             // Iterate through the list of blocks this entity is linked to
             links.linkedBlocks(entityID, (LinkedBlock link) -> {
