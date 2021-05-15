@@ -1,20 +1,34 @@
 package net.robiotic.mineassistant;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Openable;
+import org.bukkit.block.data.Powerable;
+import org.bukkit.block.data.type.Door;
+import org.bukkit.block.data.type.Piston;
+import org.bukkit.block.data.type.RedstoneRail;
+import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.material.MaterialData;
+import org.bukkit.material.Redstone;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.block.Sign;
 
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public class MineAssistant extends JavaPlugin {
     private HomeAssistant ha;
@@ -76,7 +90,8 @@ public class MineAssistant extends JavaPlugin {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        return ha.allEntities;
+        //TODO: using args[0] is probably not a good idea
+        return ha.searchedEntities(args[0]);
     }
 
     @Override
@@ -112,9 +127,13 @@ public class MineAssistant extends JavaPlugin {
         }
 
         final Material material = target.getType();
-
         if (!R.inputBlocks.contains(material) && !R.outputBlocks.contains(material)) {
             sender.sendMessage(String.format("Cannot link this block (%s) to Home Assistant", material));
+            return true;
+        }
+
+        if (!ha.allEntities.contains(haEntity)) {
+            sender.sendMessage(String.format("Entity '%s' does not exist!", haEntity));
             return true;
         }
 
@@ -127,16 +146,22 @@ public class MineAssistant extends JavaPlugin {
                 haEntity
         ));
 
+        // Sync HA -> Minecraft
+        ha.fetchEntities();
         return true;
     }
 
-    public void checkEvent(JsonObject event) {
-        if (event.get("event_type").getAsString().equals("state_changed")) {
-            // Home Assistant has flipped something on or off
-            final JsonObject evData = event.getAsJsonObject("data");
-            final String entityID = evData.get("entity_id").getAsString();
-            final String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
-            final String mcState = haState.equals("on") ? "true" : "false";
+    /**
+     * Updates all the linked blocks from a dump of every HA state.
+     * When a block is linked, this data dump is requested so the state of the block can be set immediately,
+     * instead of waiting for an update to come in via subscription.
+     *
+     * @param states the 'result' array from the HA states dump
+     */
+    public void updateBlocksFromDump(JsonArray states) {
+        states.forEach(state -> {
+            final String entityID = state.getAsJsonObject().get("entity_id").getAsString();
+            final String haState = state.getAsJsonObject().get("state").getAsString();
 
             // Iterate through the list of blocks this entity is linked to
             links.linkedBlocks(entityID, (LinkedBlock link) -> {
@@ -148,16 +173,81 @@ public class MineAssistant extends JavaPlugin {
 
                 final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
 
-                if (!targetBlock.getType().name().equals(link.material)) {
-                    // Block has been replaced with a different type, so remove it from the persistent store
-                    links.remove(link);
+                updateBlock(targetBlock, entityID, haState);
+            });
+        });
+    }
+
+    /**
+     * Updates all the blocks linked to a single HA entity.
+     * Used to process the subscription messages from HA.
+     *
+     * @param event the JsonObject of an event from HA
+     */
+    public void updateBlocksFromSubscription(JsonObject event) {
+        if (event.get("event_type").getAsString().equals("state_changed")) {
+            // Home Assistant has flipped something on or off
+            final JsonObject evData = event.getAsJsonObject("data");
+            final String entityID = evData.get("entity_id").getAsString();
+            final String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
+
+            // Iterate through the list of blocks this entity is linked to
+            links.linkedBlocks(entityID, (LinkedBlock link) -> {
+                final World world = getServer().getWorld(link.location.world);
+
+                if (world == null) {
+                    return; // World is not loaded
                 }
 
-                // and now for a very cheesy way of rewriting the powered status in the block data string
-                String bdStr = targetBlock.getBlockData().getAsString().replaceAll("powered=true|powered=false", "powered=" + mcState);
-                BlockData newBlockData = Bukkit.createBlockData(bdStr);
-                Bukkit.getScheduler().runTask(this, () -> targetBlock.setBlockData(newBlockData));
+                final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
+
+                updateBlock(targetBlock, entityID, haState);
             });
+        }
+    }
+
+    /**
+     * Update a block's state with the new one from HA.
+     *
+     * @param targetBlock the Block to update.
+     * @param entityID the HA entity ID. We don't need this yet but it might be useful later, e.g. for displaying on a sign.
+     * @param haState the new state as a string; now it's up to us to decide what to do with it.
+     */
+    public void updateBlock(Block targetBlock, String entityID, String haState) {
+        // signs. This all has to be done asynchronously, even just checking the block type.
+        // so this could certainly be improved!
+        Bukkit.getScheduler().runTask(this, () -> {
+            BlockState state = targetBlock.getState();
+            if (state instanceof Sign) {
+                // TODO: maybe some escape codes for multiple lines, or word wrapping?
+                Sign sign = (Sign) state;
+                sign.setLine(1, haState);      // set the second line only
+                sign.update();
+            }
+        });
+
+        if (targetBlock.getBlockData() instanceof Openable) {
+            // it's a door, trapdoor, or something of the like
+            // Have to run this with a one-tick delay, otherwise the MC world doesn't update.
+            boolean newState = haState.equals("on");
+            Bukkit.getScheduler().runTaskLater(this, () -> updateHandler.setOpen(targetBlock, newState), 1);
+            // if the new state is different, we have to play the sound manually.
+            // TODO: find the right sounds!
+            if (updateHandler.isOpen(targetBlock) != newState) {
+                if (targetBlock.getBlockData() instanceof Door) {
+                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_DOOR_OPEN : Sound.BLOCK_WOODEN_DOOR_CLOSE, 1.0F, 0);
+                } else if (targetBlock.getBlockData() instanceof TrapDoor) {
+                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN: Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
+                } else {
+                    // anything else, just play the trap door sound for now
+                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN: Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
+                }
+            }
+
+        } else if (targetBlock.getBlockData() instanceof Powerable) {
+            // powerable thing: lever, button etc
+            boolean newState = haState.equals("on");
+            Bukkit.getScheduler().runTask(this, () -> updateHandler.setPowered(targetBlock, newState));
         }
     }
 }

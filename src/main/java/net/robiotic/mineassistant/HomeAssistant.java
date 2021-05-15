@@ -42,6 +42,22 @@ public class HomeAssistant extends WebSocketClient {
     public ArrayList<String> allEntities = new ArrayList<>();
 
     /**
+     * Returns entity IDs that contain a search term
+     *
+     * @param partial string to search for in entity IDs
+     * @return ArrayList of entity IDs that contain the partial string
+     */
+
+    public ArrayList<String> searchedEntities (String partial) {
+        ArrayList<String> searchResults = new ArrayList<>();
+        for (String s : allEntities) {
+            if (s.contains(partial))
+                searchResults.add(s);
+        }
+        return searchResults;
+    }
+
+    /**
      * @param url   Instance URL
      * @param token Long-lived access token
      * @throws URISyntaxException when the URL is invalid
@@ -92,7 +108,7 @@ public class HomeAssistant extends WebSocketClient {
                 handleResult(message);
                 break;
             case "event":
-                ma.checkEvent(message.getAsJsonObject("event"));
+                ma.updateBlocksFromSubscription(message.getAsJsonObject("event"));
                 break;
         }
     }
@@ -161,8 +177,13 @@ public class HomeAssistant extends WebSocketClient {
 
         if (message.get("id").getAsInt() == statesId) {
             final JsonArray result = message.getAsJsonArray("result");
+
+            // update the tab completion list
             allEntities.clear();
             result.forEach(r -> allEntities.add(r.getAsJsonObject().get("entity_id").getAsString()));
+
+            // update the state of any blocks we have linked
+            ma.updateBlocksFromDump(result);
         }
     }
 }

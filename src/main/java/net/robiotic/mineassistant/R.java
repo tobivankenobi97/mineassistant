@@ -44,6 +44,7 @@ abstract class R {
             Material.WARPED_PRESSURE_PLATE,
             Material.TARGET,
             Material.TRIPWIRE_HOOK
+
     ));
 
     /// The block types that can be linked as outputs of Home Assistant.
@@ -54,6 +55,49 @@ abstract class R {
             Material.DISPENSER,
             Material.DROPPER,
             Material.NOTE_BLOCK,
-            Material.BELL
+            Material.BELL,
+            Material.ACACIA_SIGN,
+            Material.BIRCH_SIGN,
+            Material.CRIMSON_SIGN,
+            Material.DARK_OAK_SIGN,
+            Material.JUNGLE_SIGN,
+            Material.OAK_SIGN,
+            Material.SPRUCE_SIGN,
+            Material.WARPED_SIGN,
+            Material.ACACIA_WALL_SIGN,
+            Material.BIRCH_WALL_SIGN,
+            Material.CRIMSON_WALL_SIGN,
+            Material.DARK_OAK_WALL_SIGN,
+            Material.JUNGLE_WALL_SIGN,
+            Material.OAK_WALL_SIGN,
+            Material.SPRUCE_WALL_SIGN,
+            Material.WARPED_WALL_SIGN,
+            Material.ACACIA_DOOR,
+            Material.BIRCH_DOOR,
+            Material.CRIMSON_DOOR,
+            Material.DARK_OAK_DOOR,
+            Material.IRON_DOOR,
+            Material.JUNGLE_DOOR,
+            Material.OAK_DOOR,
+            Material.SPRUCE_DOOR,
+            Material.WARPED_DOOR,
+            Material.ACACIA_TRAPDOOR,
+            Material.BIRCH_TRAPDOOR,
+            Material.CRIMSON_TRAPDOOR,
+            Material.DARK_OAK_TRAPDOOR,
+            Material.IRON_TRAPDOOR,
+            Material.JUNGLE_TRAPDOOR,
+            Material.OAK_TRAPDOOR,
+            Material.SPRUCE_TRAPDOOR,
+            Material.WARPED_TRAPDOOR,
+            Material.ACACIA_FENCE_GATE,
+            Material.BIRCH_FENCE_GATE,
+            Material.CRIMSON_FENCE_GATE,
+            Material.DARK_OAK_FENCE_GATE,
+            Material.JUNGLE_FENCE_GATE,
+            Material.OAK_FENCE_GATE,
+            Material.SPRUCE_FENCE_GATE,
+            Material.WARPED_FENCE_GATE
+
     ));
 }

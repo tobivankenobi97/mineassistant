@@ -112,6 +112,12 @@ public class LinkStore {
         blocks.remove(link.location);
         commit();
     }
+
+    // remove an existing link by location only
+    public void remove(BlockLocation blockLocation) {
+        blocks.remove(blockLocation);
+        commit();
+    }
 }
 
 class LinkedBlock implements Serializable {
