@@ -8,32 +8,25 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.data.BlockData;
+import org.bukkit.block.Sign;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.Door;
-import org.bukkit.block.data.type.Piston;
-import org.bukkit.block.data.type.RedstoneRail;
 import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.material.MaterialData;
-import org.bukkit.material.Redstone;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.block.Sign;
 
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 public class MineAssistant extends JavaPlugin {
+    private final LinkStore links = new LinkStore(getDataFolder());
     private HomeAssistant ha;
     private BlockUpdateHandler updateHandler;
-    private final LinkStore links = new LinkStore(getDataFolder());
 
     @Override
     public void onLoad() {
@@ -212,8 +205,8 @@ public class MineAssistant extends JavaPlugin {
      * Update a block's state with the new one from HA.
      *
      * @param targetBlock the Block to update.
-     * @param entityID the HA entity ID. We don't need this yet but it might be useful later, e.g. for displaying on a sign.
-     * @param haState the new state as a string; now it's up to us to decide what to do with it.
+     * @param entityID    the HA entity ID. We don't need this yet but it might be useful later, e.g. for displaying on a sign.
+     * @param haState     the new state as a string; now it's up to us to decide what to do with it.
      */
     public void updateBlock(Block targetBlock, String entityID, String haState) {
         // signs. This all has to be done asynchronously, even just checking the block type.
@@ -239,10 +232,10 @@ public class MineAssistant extends JavaPlugin {
                 if (targetBlock.getBlockData() instanceof Door) {
                     targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_DOOR_OPEN : Sound.BLOCK_WOODEN_DOOR_CLOSE, 1.0F, 0);
                 } else if (targetBlock.getBlockData() instanceof TrapDoor) {
-                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN: Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
+                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN : Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
                 } else {
                     // anything else, just play the trap door sound for now
-                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN: Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
+                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN : Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
                 }
             }
 

@@ -1,23 +1,22 @@
 package net.robiotic.mineassistant;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Powerable;
-import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import java.util.List;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class BlockUpdateHandler implements Listener {
@@ -69,30 +68,30 @@ public class BlockUpdateHandler implements Listener {
      * Set the value of an existing tag in the specified BlockData.
      * ** maybe not needed any more? **
      *
-     * @param bd the BlockData object to operate on
-     * @param tag the tag whose value we want to update
+     * @param bd    the BlockData object to operate on
+     * @param tag   the tag whose value we want to update
      * @param value the new value for the tag
      * @return an updated BlockData object; if the tag is not found, just returns the original BlockData
      */
     public BlockData setBlockDataTag(BlockData bd, String tag, String value) {
-        String newBDString=bd.getAsString();
-        if (!newBDString.matches (".*"+tag+"=.+?(?=[,\\]]).*")) return bd;
-        newBDString=newBDString.replaceAll(tag+"=.+?(?=[,\\]])", tag + "=" + value);
-        return  Bukkit.createBlockData(newBDString);
+        String newBDString = bd.getAsString();
+        if (!newBDString.matches(".*" + tag + "=.+?(?=[,\\]]).*")) return bd;
+        newBDString = newBDString.replaceAll(tag + "=.+?(?=[,\\]])", tag + "=" + value);
+        return Bukkit.createBlockData(newBDString);
     }
 
     /**
      * Retrieve the value of a tag in the specified BlockData.
      * ** maybe not needed any more? **
      *
-     * @param bd BlockData object to search
+     * @param bd  BlockData object to search
      * @param tag tag to return
      * @return the value of the specified tag. Null if the tag is not found.
      */
     public String getBlockDataTag(BlockData bd, String tag) {
-        String bdAsString=bd.getAsString();
+        String bdAsString = bd.getAsString();
         int valuePos = bdAsString.indexOf(tag + "=") + (tag + "=").length();
-        if (valuePos==-1) return null;        // cannot find tag
+        if (valuePos == -1) return null;        // cannot find tag
         return bdAsString.substring(valuePos).split("[,\\]]")[0];
     }
 
@@ -100,7 +99,7 @@ public class BlockUpdateHandler implements Listener {
      * Unlink any linked blocks in a list, and log a reason why
      *
      * @param blockList a list of blocks to search through.
-     * @param reason a text description of why we are removing blocks (e.g. "explosion")
+     * @param reason    a text description of why we are removing blocks (e.g. "explosion")
      */
     public void removeMatchingBlocks(List<Block> blockList, String reason) {
         for (Block block : blockList) {
@@ -126,7 +125,7 @@ public class BlockUpdateHandler implements Listener {
      */
     @EventHandler()
     public void onEntityExplode(EntityExplodeEvent event) {
-        removeMatchingBlocks(event.blockList(), event.getEntityType().name()+ " blew it up");
+        removeMatchingBlocks(event.blockList(), event.getEntityType().name() + " blew it up");
     }
 
     /**

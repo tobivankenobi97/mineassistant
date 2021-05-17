@@ -24,38 +24,19 @@ public class HomeAssistant extends WebSocketClient {
      * Home Assistant long-lived access token.
      */
     private final String token;
-
-    /**
-     * ID of the last command sent to Home Assistant.
-     */
-    private int id = 0;
-
-    /**
-     * ID of the last get_states command sent to Home Assistant.
-     */
-    private int statesId = 0;
-
     /**
      * List of all entity IDs.
      * Used to tab completion.
      */
     public ArrayList<String> allEntities = new ArrayList<>();
-
     /**
-     * Returns entity IDs that contain a search term
-     *
-     * @param partial string to search for in entity IDs
-     * @return ArrayList of entity IDs that contain the partial string
+     * ID of the last command sent to Home Assistant.
      */
-
-    public ArrayList<String> searchedEntities (String partial) {
-        ArrayList<String> searchResults = new ArrayList<>();
-        for (String s : allEntities) {
-            if (s.contains(partial))
-                searchResults.add(s);
-        }
-        return searchResults;
-    }
+    private int id = 0;
+    /**
+     * ID of the last get_states command sent to Home Assistant.
+     */
+    private int statesId = 0;
 
     /**
      * @param url   Instance URL
@@ -71,6 +52,22 @@ public class HomeAssistant extends WebSocketClient {
 
         this.ma = ma;
         this.token = token;
+    }
+
+    /**
+     * Returns entity IDs that contain a search term
+     *
+     * @param partial string to search for in entity IDs
+     * @return ArrayList of entity IDs that contain the partial string
+     */
+
+    public ArrayList<String> searchedEntities(String partial) {
+        ArrayList<String> searchResults = new ArrayList<>();
+        for (String s : allEntities) {
+            if (s.contains(partial))
+                searchResults.add(s);
+        }
+        return searchResults;
     }
 
     @Override
