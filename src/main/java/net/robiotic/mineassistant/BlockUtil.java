@@ -49,20 +49,6 @@ public abstract class BlockUtil {
         blockState.update();
     }
 
-    public static boolean isExtended(Block block) {
-        final BlockState blockState = block.getState();
-        final Piston piston = (Piston) blockState.getBlockData();
-        return piston.isExtended();
-    }
-
-    public static void setExtended(Block block, boolean extended) {
-        final BlockState blockState = block.getState();
-        final Piston piston = (Piston) blockState.getBlockData();
-        piston.setExtended(extended);
-        blockState.setBlockData(piston);
-        blockState.update();
-    }
-
     /**
      * Retrieve the value of a tag in the specified BlockData.
      * ** maybe not needed any more? **
@@ -114,8 +100,6 @@ public abstract class BlockUtil {
             sound = newState ? Sound.BLOCK_FENCE_GATE_OPEN : Sound.BLOCK_FENCE_GATE_CLOSE;
         } else if (data instanceof Switch) {
             sound = Sound.BLOCK_LEVER_CLICK;
-        } else if (data instanceof Piston) {
-            sound = newState ? Sound.BLOCK_PISTON_EXTEND : Sound.BLOCK_PISTON_CONTRACT;
         }
 
         if (sound == null) {

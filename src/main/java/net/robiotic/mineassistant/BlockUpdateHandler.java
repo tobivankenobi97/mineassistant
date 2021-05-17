@@ -1,15 +1,12 @@
 package net.robiotic.mineassistant;
 
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.data.Openable;
+import org.bukkit.block.data.Powerable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
@@ -56,17 +53,7 @@ public class BlockUpdateHandler implements Listener {
      */
     @EventHandler()
     public void onBlockBreak(BlockBreakEvent event) {
-        if (!mode.equals("interact")) {
-            return; // Not in the 'interact' input mode
-        }
-
-        final Player player = event.getPlayer();
         final Block block = event.getBlock();
-
-        if (!R.inputBlocks.contains(block.getType()) && !R.outputBlocks.contains(block.getType())) {
-            return; // Not an input or output block
-        }
-
         final String haEntity = links.getEntity(block);
 
         if (haEntity == null) {
@@ -75,9 +62,8 @@ public class BlockUpdateHandler implements Listener {
 
         links.remove(new BlockLocation(block));
         event.getPlayer().sendMessage(String.format(
-                "%s was broken by %s and unlinked from '%s'",
+                "%s was broken and unlinked from '%s'",
                 block.getBlockData().getMaterial().name(),
-                player.getDisplayName(),
                 haEntity
         ));
     }
@@ -89,6 +75,9 @@ public class BlockUpdateHandler implements Listener {
      */
     @EventHandler()
     public void onInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return; // Only respond to "use" actions
+        }
 
         if (!mode.equals("interact")) {
             return; // Not in the 'interact' input mode
@@ -103,8 +92,8 @@ public class BlockUpdateHandler implements Listener {
 
         final Block block = event.getClickedBlock();
 
-        if (block == null || (!R.inputBlocks.contains(block.getType()) && !R.outputBlocks.contains(block.getType()))) {
-            return; // Not an input or output block
+        if (block == null) {
+            return;
         }
 
         final String haEntity = links.getEntity(block);
@@ -113,20 +102,20 @@ public class BlockUpdateHandler implements Listener {
             return; // Not linked
         }
 
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {        // only respond to "use" actions
-            final BlockState bs = block.getState();
-            if (block.getBlockData() instanceof Openable) {
-                    /*
-                    do nothing for now, but we should potentially cancel this event as it will cause
-                    the MC door to go out of sync with the real world door
-                    */
+        if (!haEntity.startsWith("switch.")) {
+            event.setCancelled(true);
+            return;
+        }
 
-            } else {
-                // set power on/off
-                final boolean state = BlockUtil.isPowered(block);
-                ha.setState(haEntity, state);
-                logger.info(String.format("%s set Home Assistant/%s = %s", player.getDisplayName(), haEntity, state ? "ON" : "OFF"));
-            }
+        if (block.getBlockData() instanceof Powerable) {
+            // set power on/off
+            final boolean state = BlockUtil.isPowered(block);
+            ha.setState(haEntity, state);
+            logger.info(String.format("%s set Home Assistant/%s = %s", player.getDisplayName(), haEntity, state ? "ON" : "OFF"));
+        } else if (block.getBlockData() instanceof Openable) {
+            final boolean state = BlockUtil.isOpen(block);
+            ha.setState(haEntity, state);
+            logger.info(String.format("%s set Home Assistant/%s = %s", player.getDisplayName(), haEntity, state ? "OPEN" : "CLOSED"));
         }
     }
 
@@ -142,8 +131,9 @@ public class BlockUpdateHandler implements Listener {
         }
 
         final Block block = event.getBlock();
+        final LinkType linkType = R.linkTypes.get(block.getType());
 
-        if (!R.inputBlocks.contains(block.getType())) {
+        if (linkType != LinkType.INPUT) {
             return; // Not an input block
         }
 
