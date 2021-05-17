@@ -147,6 +147,25 @@ public class MineAssistant extends JavaPlugin {
     }
 
     /**
+     * Set the state of all blocks linked to an entity.
+     *
+     * @param entityID The ID of the entity to find links for
+     * @param haState  The new state to apply to all linked blocks
+     */
+    private void updateBlocks(String entityID, String haState) {
+        links.linkedBlocks(entityID, (LinkedBlock link) -> {
+            final World world = getServer().getWorld(link.location.world);
+
+            if (world == null) {
+                return; // World is not loaded
+            }
+
+            final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
+            updateBlock(targetBlock, entityID, haState);
+        });
+    }
+
+    /**
      * Updates all the linked blocks from a dump of every HA state.
      * When a block is linked, this data dump is requested so the state of the block can be set immediately,
      * instead of waiting for an update to come in via subscription.
@@ -159,17 +178,7 @@ public class MineAssistant extends JavaPlugin {
             final String haState = state.getAsJsonObject().get("state").getAsString();
 
             // Iterate through the list of blocks this entity is linked to
-            links.linkedBlocks(entityID, (LinkedBlock link) -> {
-                final World world = getServer().getWorld(link.location.world);
-
-                if (world == null) {
-                    return; // World is not loaded
-                }
-
-                final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
-
-                updateBlock(targetBlock, entityID, haState);
-            });
+            updateBlocks(entityID, haState);
         });
     }
 
@@ -187,17 +196,7 @@ public class MineAssistant extends JavaPlugin {
             final String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
 
             // Iterate through the list of blocks this entity is linked to
-            links.linkedBlocks(entityID, (LinkedBlock link) -> {
-                final World world = getServer().getWorld(link.location.world);
-
-                if (world == null) {
-                    return; // World is not loaded
-                }
-
-                final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
-
-                updateBlock(targetBlock, entityID, haState);
-            });
+            updateBlocks(entityID, haState);
         }
     }
 
@@ -216,7 +215,8 @@ public class MineAssistant extends JavaPlugin {
             if (state instanceof Sign) {
                 // TODO: maybe some escape codes for multiple lines, or word wrapping?
                 Sign sign = (Sign) state;
-                sign.setLine(1, haState);      // set the second line only
+                sign.setLine(1, entityID);
+                sign.setLine(2, haState);
                 sign.update();
             }
         });
