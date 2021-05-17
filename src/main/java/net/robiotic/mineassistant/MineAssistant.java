@@ -3,16 +3,16 @@ package net.robiotic.mineassistant;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Powerable;
-import org.bukkit.block.data.type.Door;
-import org.bukkit.block.data.type.TrapDoor;
+import org.bukkit.block.data.type.Piston;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -145,25 +145,6 @@ public class MineAssistant extends JavaPlugin {
     }
 
     /**
-     * Set the state of all blocks linked to an entity.
-     *
-     * @param entityID The ID of the entity to find links for
-     * @param haState  The new state to apply to all linked blocks
-     */
-    private void updateBlocks(String entityID, String haState) {
-        links.linkedBlocks(entityID, (LinkedBlock link) -> {
-            final World world = getServer().getWorld(link.location.world);
-
-            if (world == null) {
-                return; // World is not loaded
-            }
-
-            final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
-            updateBlock(targetBlock, entityID, haState);
-        });
-    }
-
-    /**
      * Updates all the linked blocks from a dump of every HA state.
      * When a block is linked, this data dump is requested so the state of the block can be set immediately,
      * instead of waiting for an update to come in via subscription.
@@ -172,11 +153,13 @@ public class MineAssistant extends JavaPlugin {
      */
     public void updateBlocksFromDump(JsonArray states) {
         states.forEach(state -> {
-            final String entityID = state.getAsJsonObject().get("entity_id").getAsString();
-            final String haState = state.getAsJsonObject().get("state").getAsString();
+            final JsonObject obj = state.getAsJsonObject();
+            final String entityID = obj.get("entity_id").getAsString();
+            final String haState = obj.get("state").getAsString();
+            final String haName = obj.getAsJsonObject("attributes").get("friendly_name").getAsString();
 
             // Iterate through the list of blocks this entity is linked to
-            updateBlocks(entityID, haState);
+            updateBlocks(entityID, haName, haState);
         });
     }
 
@@ -191,56 +174,71 @@ public class MineAssistant extends JavaPlugin {
             // Home Assistant has flipped something on or off
             final JsonObject evData = event.getAsJsonObject("data");
             final String entityID = evData.get("entity_id").getAsString();
-            final String haState = evData.getAsJsonObject("new_state").getAsJsonPrimitive("state").getAsString();
+
+            final JsonObject newState = evData.getAsJsonObject("new_state");
+            final String haState = newState.getAsJsonPrimitive("state").getAsString();
+            final String haName = newState.getAsJsonObject("attributes").get("friendly_name").getAsString();
 
             // Iterate through the list of blocks this entity is linked to
-            updateBlocks(entityID, haState);
+            updateBlocks(entityID, haName, haState);
         }
     }
 
     /**
-     * Update a block's state with the new one from HA.
+     * Set the state of all blocks linked to an entity.
      *
-     * @param targetBlock the Block to update.
-     * @param entityID    the HA entity ID. We don't need this yet but it might be useful later, e.g. for displaying on a sign.
-     * @param haState     the new state as a string; now it's up to us to decide what to do with it.
+     * @param entityID The ID of the entity to find links for
+     * @param haState  The new state to apply to all linked blocks
      */
-    public void updateBlock(Block targetBlock, String entityID, String haState) {
-        // signs. This all has to be done asynchronously, even just checking the block type.
-        // so this could certainly be improved!
-        Bukkit.getScheduler().runTask(this, () -> {
-            BlockState state = targetBlock.getState();
-            if (state instanceof Sign) {
-                // TODO: maybe some escape codes for multiple lines, or word wrapping?
-                Sign sign = (Sign) state;
-                sign.setLine(1, entityID);
-                sign.setLine(2, haState);
-                sign.update();
-            }
-        });
+    private void updateBlocks(String entityID, String entityName, String haState) {
+        links.linkedBlocks(entityID, (LinkedBlock link) -> {
+            final World world = getServer().getWorld(link.location.world);
 
-        if (targetBlock.getBlockData() instanceof Openable) {
-            // it's a door, trapdoor, or something of the like
-            // Have to run this with a one-tick delay, otherwise the MC world doesn't update.
-            boolean newState = haState.equals("on");
-            Bukkit.getScheduler().runTaskLater(this, () -> BlockUtil.setOpen(targetBlock, newState), 1);
-            // if the new state is different, we have to play the sound manually.
-            // TODO: find the right sounds!
-            if (BlockUtil.isOpen(targetBlock) != newState) {
-                if (targetBlock.getBlockData() instanceof Door) {
-                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_DOOR_OPEN : Sound.BLOCK_WOODEN_DOOR_CLOSE, 1.0F, 0);
-                } else if (targetBlock.getBlockData() instanceof TrapDoor) {
-                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN : Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
-                } else {
-                    // anything else, just play the trap door sound for now
-                    targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_TRAPDOOR_OPEN : Sound.BLOCK_WOODEN_TRAPDOOR_CLOSE, 1.0F, 0);
+            if (world == null) {
+                return; // World is not loaded
+            }
+
+            final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
+
+            // signs. This all has to be done asynchronously, even just checking the block type.
+            // so this could certainly be improved!
+            Bukkit.getScheduler().runTask(this, () -> {
+                BlockState state = targetBlock.getState();
+                if (state instanceof Sign) {
+                    // TODO: maybe some escape codes for multiple lines, or word wrapping?
+                    Sign sign = (Sign) state;
+                    sign.setLine(1, ChatColor.translateAlternateColorCodes('&', "&3" + entityName));
+                    sign.setLine(2, haState);
+                    sign.update();
+                }
+            });
+
+            final boolean newState = haState.equals("on");
+            final BlockData data = targetBlock.getBlockData();
+
+            if (data instanceof Openable) {
+                // it's a door, trapdoor, or something of the like
+                // Have to run this with a one-tick delay, otherwise the MC world doesn't update.
+                Bukkit.getScheduler().runTaskLater(this, () -> BlockUtil.setOpen(targetBlock, newState), 1);
+
+                if (BlockUtil.isOpen(targetBlock) != newState) {
+                    BlockUtil.makeSound(targetBlock, newState);
+                }
+            } else if (data instanceof Powerable) {
+                // powerable thing: lever, button etc
+                Bukkit.getScheduler().runTask(this, () -> BlockUtil.setPowered(targetBlock, newState));
+
+                if (BlockUtil.isPowered(targetBlock) != newState) {
+                    BlockUtil.makeSound(targetBlock, newState);
+                }
+            } else if (data instanceof Piston) {
+                // TODO: this kills the piston
+                Bukkit.getScheduler().runTask(this, () -> BlockUtil.setExtended(targetBlock, newState));
+
+                if (BlockUtil.isExtended(targetBlock) != newState) {
+                    BlockUtil.makeSound(targetBlock, newState);
                 }
             }
-
-        } else if (targetBlock.getBlockData() instanceof Powerable) {
-            // powerable thing: lever, button etc
-            boolean newState = haState.equals("on");
-            Bukkit.getScheduler().runTask(this, () -> BlockUtil.setPowered(targetBlock, newState));
-        }
+        });
     }
 }
