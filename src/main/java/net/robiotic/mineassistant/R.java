@@ -2,8 +2,9 @@ package net.robiotic.mineassistant;
 
 import org.bukkit.Material;
 
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Map;
+
+import static java.util.Map.entry;
 
 /**
  * Plugin-wide resources
@@ -16,88 +17,93 @@ abstract class R {
     /// Maximum distance a player can be standing from the block they are linking.
     static final int MAX_TARGET_DIST = 5;
 
-    /// The block types that can be linked as inputs to Home Assistant.
-    static final HashSet<Material> inputBlocks = new HashSet<>(Arrays.asList(
-            // Inputs
-            Material.LEVER,
-            Material.BIRCH_BUTTON,
-            Material.ACACIA_BUTTON,
-            Material.CRIMSON_BUTTON,
-            Material.DARK_OAK_BUTTON,
-            Material.JUNGLE_BUTTON,
-            Material.OAK_BUTTON,
-            Material.POLISHED_BLACKSTONE_BUTTON,
-            Material.SPRUCE_BUTTON,
-            Material.STONE_BUTTON,
-            Material.WARPED_BUTTON,
-            Material.ACACIA_PRESSURE_PLATE,
-            Material.BIRCH_PRESSURE_PLATE,
-            Material.CRIMSON_PRESSURE_PLATE,
-            Material.DARK_OAK_PRESSURE_PLATE,
-            Material.HEAVY_WEIGHTED_PRESSURE_PLATE,
-            Material.JUNGLE_PRESSURE_PLATE,
-            Material.LIGHT_WEIGHTED_PRESSURE_PLATE,
-            Material.OAK_PRESSURE_PLATE,
-            Material.POLISHED_BLACKSTONE_PRESSURE_PLATE,
-            Material.SPRUCE_PRESSURE_PLATE,
-            Material.STONE_PRESSURE_PLATE,
-            Material.WARPED_PRESSURE_PLATE,
-            Material.TARGET,
-            Material.TRIPWIRE_HOOK
+    /// The block types that can be linked to Home Assistant.
+    @SuppressWarnings("RedundantTypeArguments")
+    static final Map<Material, LinkType> linkTypes = Map.<Material, LinkType>ofEntries(
+            entry(Material.LEVER, LinkType.SYNC),
+            entry(Material.TRIPWIRE_HOOK, LinkType.INPUT),
+            entry(Material.CAULDRON, LinkType.INPUT),
 
-    ));
+            // Buttons
+            entry(Material.BIRCH_BUTTON, LinkType.INPUT),
+            entry(Material.ACACIA_BUTTON, LinkType.INPUT),
+            entry(Material.CRIMSON_BUTTON, LinkType.INPUT),
+            entry(Material.DARK_OAK_BUTTON, LinkType.INPUT),
+            entry(Material.JUNGLE_BUTTON, LinkType.INPUT),
+            entry(Material.OAK_BUTTON, LinkType.INPUT),
+            entry(Material.POLISHED_BLACKSTONE_BUTTON, LinkType.INPUT),
+            entry(Material.SPRUCE_BUTTON, LinkType.INPUT),
+            entry(Material.STONE_BUTTON, LinkType.INPUT),
+            entry(Material.WARPED_BUTTON, LinkType.INPUT),
 
-    /// The block types that can be linked as outputs of Home Assistant.
-    static final HashSet<Material> outputBlocks = new HashSet<>(Arrays.asList(
-            Material.PISTON,
-            Material.STICKY_PISTON,
-            Material.REDSTONE_LAMP,
-            Material.DISPENSER,
-            Material.DROPPER,
-            Material.NOTE_BLOCK,
-            Material.BELL,
-            Material.ACACIA_SIGN,
-            Material.BIRCH_SIGN,
-            Material.CRIMSON_SIGN,
-            Material.DARK_OAK_SIGN,
-            Material.JUNGLE_SIGN,
-            Material.OAK_SIGN,
-            Material.SPRUCE_SIGN,
-            Material.WARPED_SIGN,
-            Material.ACACIA_WALL_SIGN,
-            Material.BIRCH_WALL_SIGN,
-            Material.CRIMSON_WALL_SIGN,
-            Material.DARK_OAK_WALL_SIGN,
-            Material.JUNGLE_WALL_SIGN,
-            Material.OAK_WALL_SIGN,
-            Material.SPRUCE_WALL_SIGN,
-            Material.WARPED_WALL_SIGN,
-            Material.ACACIA_DOOR,
-            Material.BIRCH_DOOR,
-            Material.CRIMSON_DOOR,
-            Material.DARK_OAK_DOOR,
-            Material.IRON_DOOR,
-            Material.JUNGLE_DOOR,
-            Material.OAK_DOOR,
-            Material.SPRUCE_DOOR,
-            Material.WARPED_DOOR,
-            Material.ACACIA_TRAPDOOR,
-            Material.BIRCH_TRAPDOOR,
-            Material.CRIMSON_TRAPDOOR,
-            Material.DARK_OAK_TRAPDOOR,
-            Material.IRON_TRAPDOOR,
-            Material.JUNGLE_TRAPDOOR,
-            Material.OAK_TRAPDOOR,
-            Material.SPRUCE_TRAPDOOR,
-            Material.WARPED_TRAPDOOR,
-            Material.ACACIA_FENCE_GATE,
-            Material.BIRCH_FENCE_GATE,
-            Material.CRIMSON_FENCE_GATE,
-            Material.DARK_OAK_FENCE_GATE,
-            Material.JUNGLE_FENCE_GATE,
-            Material.OAK_FENCE_GATE,
-            Material.SPRUCE_FENCE_GATE,
-            Material.WARPED_FENCE_GATE
+            // Pressure plates
+            entry(Material.ACACIA_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.BIRCH_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.CRIMSON_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.DARK_OAK_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.HEAVY_WEIGHTED_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.JUNGLE_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.OAK_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.POLISHED_BLACKSTONE_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.SPRUCE_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.STONE_PRESSURE_PLATE, LinkType.INPUT),
+            entry(Material.WARPED_PRESSURE_PLATE, LinkType.INPUT),
 
-    ));
+            // Signs
+            entry(Material.ACACIA_SIGN, LinkType.OUTPUT),
+            entry(Material.BIRCH_SIGN, LinkType.OUTPUT),
+            entry(Material.CRIMSON_SIGN, LinkType.OUTPUT),
+            entry(Material.DARK_OAK_SIGN, LinkType.OUTPUT),
+            entry(Material.JUNGLE_SIGN, LinkType.OUTPUT),
+            entry(Material.OAK_SIGN, LinkType.OUTPUT),
+            entry(Material.SPRUCE_SIGN, LinkType.OUTPUT),
+            entry(Material.WARPED_SIGN, LinkType.OUTPUT),
+            entry(Material.ACACIA_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.BIRCH_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.CRIMSON_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.DARK_OAK_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.JUNGLE_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.OAK_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.SPRUCE_WALL_SIGN, LinkType.OUTPUT),
+            entry(Material.WARPED_WALL_SIGN, LinkType.OUTPUT),
+
+            // Doors
+            entry(Material.ACACIA_DOOR, LinkType.SYNC),
+            entry(Material.BIRCH_DOOR, LinkType.SYNC),
+            entry(Material.CRIMSON_DOOR, LinkType.SYNC),
+            entry(Material.DARK_OAK_DOOR, LinkType.SYNC),
+            entry(Material.IRON_DOOR, LinkType.SYNC),
+            entry(Material.JUNGLE_DOOR, LinkType.SYNC),
+            entry(Material.OAK_DOOR, LinkType.SYNC),
+            entry(Material.SPRUCE_DOOR, LinkType.SYNC),
+            entry(Material.WARPED_DOOR, LinkType.SYNC),
+
+            // Trapdoors
+            entry(Material.ACACIA_TRAPDOOR, LinkType.SYNC),
+            entry(Material.BIRCH_TRAPDOOR, LinkType.SYNC),
+            entry(Material.CRIMSON_TRAPDOOR, LinkType.SYNC),
+            entry(Material.DARK_OAK_TRAPDOOR, LinkType.SYNC),
+            entry(Material.IRON_TRAPDOOR, LinkType.SYNC),
+            entry(Material.JUNGLE_TRAPDOOR, LinkType.SYNC),
+            entry(Material.OAK_TRAPDOOR, LinkType.SYNC),
+            entry(Material.SPRUCE_TRAPDOOR, LinkType.SYNC),
+            entry(Material.WARPED_TRAPDOOR, LinkType.SYNC),
+
+            // Fence gates
+            entry(Material.ACACIA_FENCE_GATE, LinkType.SYNC),
+            entry(Material.BIRCH_FENCE_GATE, LinkType.SYNC),
+            entry(Material.CRIMSON_FENCE_GATE, LinkType.SYNC),
+            entry(Material.DARK_OAK_FENCE_GATE, LinkType.SYNC),
+            entry(Material.JUNGLE_FENCE_GATE, LinkType.SYNC),
+            entry(Material.OAK_FENCE_GATE, LinkType.SYNC),
+            entry(Material.SPRUCE_FENCE_GATE, LinkType.SYNC),
+            entry(Material.WARPED_FENCE_GATE, LinkType.SYNC)
+    );
+}
+
+enum LinkType {
+    INPUT,   // MC --> HA
+    OUTPUT,  // MC <-- HA
+    SYNC,    // MC <-> HA
 }

@@ -12,7 +12,6 @@ import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Powerable;
-import org.bukkit.block.data.type.Piston;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -83,7 +82,6 @@ public class MineAssistant extends JavaPlugin {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        //TODO: using args[0] is probably not a good idea
         return ha.searchedEntities(args[0]);
     }
 
@@ -120,7 +118,9 @@ public class MineAssistant extends JavaPlugin {
         }
 
         final Material material = target.getType();
-        if (!R.inputBlocks.contains(material) && !R.outputBlocks.contains(material)) {
+        final LinkType linkType = R.linkTypes.get(material);
+
+        if (linkType == null) {
             sender.sendMessage(String.format("Cannot link this block (%s) to Home Assistant", material));
             return true;
         }
@@ -131,13 +131,13 @@ public class MineAssistant extends JavaPlugin {
         }
 
         links.add(target, haEntity);
-        getLogger().info(String.format("%s linked %s to Home Assistant/%s", player.getDisplayName(), target.getBlockData().getAsString(), haEntity));
-        sender.sendMessage(String.format(
-                "Linked %s as %s '%s'",
-                material.name(),
-                R.inputBlocks.contains(material) ? "input to" : "output of",
+        getLogger().info(String.format(
+                "%s linked %s to Home Assistant entity '%s'",
+                player.getDisplayName(),
+                target.getBlockData().getAsString(),
                 haEntity
         ));
+        sender.sendMessage(String.format("Linked %s as %s", material.name(), linkType));
 
         // Sync HA -> Minecraft
         // TODO: use 'homeassistant.update_entity' instead of requesting the entire dump
