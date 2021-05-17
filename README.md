@@ -2,14 +2,7 @@
 
 Links Home Assistant entities to Minecraft redstone blocks.
 
-## Setup
+## Getting started
 
-Edit `config.yml` to connect to Home Assistant.
-
-## Commands
-
-Look at a redstone-capable block and run `/hass <entity ID>` to link it.
-
----
-
-Inspired by [tool32768's Reddit post](https://www.reddit.com/r/homeassistant/comments/nb4p5v/mine_assistant/).
+1. [Download](https://dev.bukkit.org/projects/mine-assistant/files) the plugin
+1. Check out the [wiki](https://gitlab.com/klikini/mineassistant/-/wikis/home)
