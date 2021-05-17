@@ -1,11 +1,8 @@
 package net.robiotic.mineassistant;
 
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Openable;
-import org.bukkit.block.data.Powerable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,7 +13,6 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 public class BlockUpdateHandler implements Listener {
@@ -32,92 +28,6 @@ public class BlockUpdateHandler implements Listener {
         this.links = links;
     }
 
-    public void setPowered(Block block, boolean powered) {
-        BlockState blockState = block.getState();
-        Powerable powerable = (Powerable) blockState.getBlockData();
-        powerable.setPowered(powered);
-        blockState.setBlockData(powerable);
-        blockState.update();
-    }
-
-    public boolean isPowered(Block block) {
-        if (block.getBlockData() instanceof Powerable) {
-            BlockState blockState = block.getState();
-            Powerable powerable = (Powerable) blockState.getBlockData();
-            // the result of isPowered is opposite to the actual powered status, so invert it
-            return !powerable.isPowered();
-        }
-        return false;       // This is a bit weird but I guess if it isn't powereble, it isn't powered either
-    }
-
-    public void setOpen(Block block, boolean open) {
-        BlockState blockState = block.getState();
-        Openable openable = (Openable) blockState.getBlockData();
-        openable.setOpen(open);
-        blockState.setBlockData(openable);
-        blockState.update();
-    }
-
-    public boolean isOpen(Block block) {
-        BlockState blockState = block.getState();
-        Openable openable = (Openable) blockState.getBlockData();
-        return openable.isOpen();
-    }
-
-    /**
-     * Set the value of an existing tag in the specified BlockData.
-     * ** maybe not needed any more? **
-     *
-     * @param bd    the BlockData object to operate on
-     * @param tag   the tag whose value we want to update
-     * @param value the new value for the tag
-     * @return an updated BlockData object; if the tag is not found, just returns the original BlockData
-     */
-    public BlockData setBlockDataTag(BlockData bd, String tag, String value) {
-        String newBDString = bd.getAsString();
-        if (!newBDString.matches(".*" + tag + "=.+?(?=[,\\]]).*")) return bd;
-        newBDString = newBDString.replaceAll(tag + "=.+?(?=[,\\]])", tag + "=" + value);
-        return Bukkit.createBlockData(newBDString);
-    }
-
-    /**
-     * Retrieve the value of a tag in the specified BlockData.
-     * ** maybe not needed any more? **
-     *
-     * @param bd  BlockData object to search
-     * @param tag tag to return
-     * @return the value of the specified tag. Null if the tag is not found.
-     */
-    public String getBlockDataTag(BlockData bd, String tag) {
-        String bdAsString = bd.getAsString();
-        int valuePos = bdAsString.indexOf(tag + "=") + (tag + "=").length();
-        if (valuePos == -1) return null;        // cannot find tag
-        return bdAsString.substring(valuePos).split("[,\\]]")[0];
-    }
-
-    /**
-     * Unlink any linked blocks in a list, and log a reason why
-     *
-     * @param blockList a list of blocks to search through.
-     * @param reason    a text description of why we are removing blocks (e.g. "explosion")
-     */
-    public void removeMatchingBlocks(List<Block> blockList, String reason) {
-        for (Block block : blockList) {
-            String entityID = links.getEntity(block);
-            if (entityID != null) {
-                // this block is in the link store, remove it
-                BlockLocation bl = new BlockLocation(block);
-                links.remove(bl);
-                logger.info(String.format(
-                        "%s was unlinked from '%s' because %s",
-                        block.getBlockData().getMaterial().name(),
-                        entityID,
-                        reason
-                ));
-            }
-        }
-    }
-
     /**
      * Detect explosions caused by an entity (Creeper, TNT etc)
      *
@@ -125,7 +35,7 @@ public class BlockUpdateHandler implements Listener {
      */
     @EventHandler()
     public void onEntityExplode(EntityExplodeEvent event) {
-        removeMatchingBlocks(event.blockList(), event.getEntityType().name() + " blew it up");
+        links.removeMatchingBlocks(event.blockList(), event.getEntityType().name() + " blew it up");
     }
 
     /**
@@ -136,7 +46,7 @@ public class BlockUpdateHandler implements Listener {
      */
     @EventHandler()
     public void onBlockExplode(BlockExplodeEvent event) {
-        removeMatchingBlocks(event.blockList(), "An unknown source blew it up");
+        links.removeMatchingBlocks(event.blockList(), "An unknown source blew it up");
     }
 
     /**
@@ -163,8 +73,7 @@ public class BlockUpdateHandler implements Listener {
             return; // Not linked
         }
 
-        BlockLocation brokenBlockLocation = new BlockLocation(block);
-        links.remove(brokenBlockLocation);
+        links.remove(new BlockLocation(block));
         event.getPlayer().sendMessage(String.format(
                 "%s was broken by %s and unlinked from '%s'",
                 block.getBlockData().getMaterial().name(),
@@ -214,7 +123,7 @@ public class BlockUpdateHandler implements Listener {
 
             } else {
                 // set power on/off
-                final boolean state = isPowered(block);
+                final boolean state = BlockUtil.isPowered(block);
                 ha.setState(haEntity, state);
                 logger.info(String.format("%s set Home Assistant/%s = %s", player.getDisplayName(), haEntity, state ? "ON" : "OFF"));
             }
@@ -244,6 +153,6 @@ public class BlockUpdateHandler implements Listener {
             return; // Not linked
         }
 
-        ha.setState(haEntity, isPowered(block));
+        ha.setState(haEntity, BlockUtil.isPowered(block));
     }
 }

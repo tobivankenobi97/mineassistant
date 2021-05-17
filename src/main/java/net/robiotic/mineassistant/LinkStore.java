@@ -84,7 +84,7 @@ public class LinkStore {
 
         if (!link.material.equals(block.getType().name())) {
             // The material doesn't match, so the block was replaced
-            remove(link);
+            remove(link.location);
             return null;
         }
 
@@ -104,26 +104,44 @@ public class LinkStore {
     }
 
     /**
-     * Remove an existing link.
+     * Remove a link by location.
      *
-     * @param link The link object to remove
+     * @param location The location of the linked block
      */
-    public void remove(LinkedBlock link) {
-        blocks.remove(link.location);
-        commit();
+    public void remove(BlockLocation location) {
+        if (blocks.remove(location) != null) {
+            commit();
+        }
     }
 
-    // remove an existing link by location only
-    public void remove(BlockLocation blockLocation) {
-        blocks.remove(blockLocation);
+    /**
+     * Unlink any linked blocks in a list, and log a reason why
+     *
+     * @param blockList a list of blocks to search through.
+     * @param reason    a text description of why we are removing blocks (e.g. "explosion")
+     */
+    public void removeMatchingBlocks(List<Block> blockList, String reason) {
+        for (Block block : blockList) {
+            final LinkedBlock removed = blocks.remove(new BlockLocation(block));
+
+            if (removed != null) {
+                logger.info(String.format(
+                        "%s was unlinked from '%s' because %s",
+                        block.getBlockData().getMaterial().name(),
+                        removed.entity,
+                        reason
+                ));
+            }
+        }
+
         commit();
     }
 }
 
 class LinkedBlock implements Serializable {
-    BlockLocation location;
-    String material;
-    String entity;
+    final BlockLocation location;
+    final String material;
+    final String entity;
 
     /**
      * Create a link between a block and an entity.
@@ -139,8 +157,8 @@ class LinkedBlock implements Serializable {
 }
 
 class BlockLocation implements Serializable {
-    UUID world;
-    int x, y, z;
+    final UUID world;
+    final int x, y, z;
 
     BlockLocation(Block block) {
         world = block.getWorld().getUID();

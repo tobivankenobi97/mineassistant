@@ -225,10 +225,10 @@ public class MineAssistant extends JavaPlugin {
             // it's a door, trapdoor, or something of the like
             // Have to run this with a one-tick delay, otherwise the MC world doesn't update.
             boolean newState = haState.equals("on");
-            Bukkit.getScheduler().runTaskLater(this, () -> updateHandler.setOpen(targetBlock, newState), 1);
+            Bukkit.getScheduler().runTaskLater(this, () -> BlockUtil.setOpen(targetBlock, newState), 1);
             // if the new state is different, we have to play the sound manually.
             // TODO: find the right sounds!
-            if (updateHandler.isOpen(targetBlock) != newState) {
+            if (BlockUtil.isOpen(targetBlock) != newState) {
                 if (targetBlock.getBlockData() instanceof Door) {
                     targetBlock.getWorld().playSound(targetBlock.getLocation(), newState ? Sound.BLOCK_WOODEN_DOOR_OPEN : Sound.BLOCK_WOODEN_DOOR_CLOSE, 1.0F, 0);
                 } else if (targetBlock.getBlockData() instanceof TrapDoor) {
@@ -242,7 +242,7 @@ public class MineAssistant extends JavaPlugin {
         } else if (targetBlock.getBlockData() instanceof Powerable) {
             // powerable thing: lever, button etc
             boolean newState = haState.equals("on");
-            Bukkit.getScheduler().runTask(this, () -> updateHandler.setPowered(targetBlock, newState));
+            Bukkit.getScheduler().runTask(this, () -> BlockUtil.setPowered(targetBlock, newState));
         }
     }
 }
