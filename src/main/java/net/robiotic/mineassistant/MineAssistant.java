@@ -147,6 +147,8 @@ public class MineAssistant extends JavaPlugin {
         ));
 
         // Sync HA -> Minecraft
+        // TODO: use 'homeassistant.update_entity' instead of requesting the entire dump
+        //  https://www.home-assistant.io/docs/scripts/service-calls/
         ha.fetchEntities();
         return true;
     }
