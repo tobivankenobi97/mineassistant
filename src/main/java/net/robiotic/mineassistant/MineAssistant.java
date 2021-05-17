@@ -233,13 +233,6 @@ public class MineAssistant extends JavaPlugin {
                 if (BlockUtil.isPowered(targetBlock) != newState) {
                     BlockUtil.makeSound(targetBlock, newState);
                 }
-            } else if (data instanceof Piston) {
-                // TODO: this kills the piston
-                Bukkit.getScheduler().runTask(this, () -> BlockUtil.setExtended(targetBlock, newState));
-
-                if (BlockUtil.isExtended(targetBlock) != newState) {
-                    BlockUtil.makeSound(targetBlock, newState);
-                }
             }
         });
     }
