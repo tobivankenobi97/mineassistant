@@ -4,10 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import org.bukkit.ChatColor;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -66,10 +64,10 @@ public class HomeAssistant extends WebSocketClient {
         ArrayList<String> searchResults = new ArrayList<>();
         for (String s : allEntities) {
             if (s.contains(partial))
-                if (!links.containsEntity(s))
-                    searchResults.add(s);
-               else
-                    searchResults.add(s + " (LINKED)");
+                if (links.containsEntity(s))
+                    searchResults.add(s + " (LINKED)");     // entity is already in link store - mark it as such
+                else
+                    searchResults.add(s);                   // just display the name if no link was found
         }
         return searchResults;
     }
