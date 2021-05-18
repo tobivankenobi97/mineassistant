@@ -22,6 +22,7 @@ abstract class R {
     static final Map<Material, LinkType> linkTypes = Map.<Material, LinkType>ofEntries(
             entry(Material.LEVER, LinkType.SYNC),
             entry(Material.TRIPWIRE_HOOK, LinkType.INPUT),
+            entry(Material.DAYLIGHT_DETECTOR, LinkType.INPUT),
 
             // Buttons
             entry(Material.BIRCH_BUTTON, LinkType.INPUT),

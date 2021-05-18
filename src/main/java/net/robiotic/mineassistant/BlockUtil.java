@@ -6,6 +6,7 @@ import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.data.AnaloguePowerable;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Powerable;
@@ -19,10 +20,37 @@ import java.util.logging.Logger;
 public abstract class BlockUtil {
     private static final Logger logger = Logger.getLogger("BlockUtil");
 
+    /**
+     * Get the current power level of an analogue powerable block.
+     *
+     * @param block The block to check
+     * @return The power level as a float in the range 0..1
+     */
+    public static float powerLevel(Block block) {
+        final BlockData blockData = block.getBlockData();
+
+        if (!(blockData instanceof AnaloguePowerable)) {
+            return 0;
+        }
+
+        final AnaloguePowerable powerable = (AnaloguePowerable) blockData;
+        return 1 - (powerable.getPower() / (float) powerable.getMaximumPower());
+    }
+
+    /**
+     * Check if a powerable block is powered.
+     *
+     * @param block The block to check
+     * @return The boolean "powered" state for powerable blocks, or
+     * whether the block is at least 50% powered for analog powerable blocks.
+     */
     public static boolean isPowered(Block block) {
-        if (block.getBlockData() instanceof Powerable) {
-            final BlockState blockState = block.getState();
-            final Powerable powerable = (Powerable) blockState.getBlockData();
+        final BlockData blockData = block.getBlockData();
+
+        if (blockData instanceof AnaloguePowerable) {
+            return powerLevel(block) >= 0.5;
+        } else if (blockData instanceof Powerable) {
+            final Powerable powerable = (Powerable) blockData;
             // the result of isPowered is opposite to the actual powered status, so invert it
             return !powerable.isPowered();
         }

@@ -133,7 +133,7 @@ public class BlockUpdateHandler implements Listener {
         final Block block = event.getBlock();
         final LinkType linkType = R.linkTypes.get(block.getType());
 
-        if (linkType != LinkType.INPUT) {
+        if (linkType != LinkType.INPUT && linkType != LinkType.SYNC) {
             return; // Not an input block
         }
 
