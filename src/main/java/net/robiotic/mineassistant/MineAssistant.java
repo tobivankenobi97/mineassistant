@@ -20,9 +20,12 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class MineAssistant extends JavaPlugin {
+    private final Logger logger = getLogger();
     private final LinkStore links = new LinkStore(getDataFolder());
     private HomeAssistant ha;
     private BlockUpdateHandler updateHandler;
@@ -39,7 +42,7 @@ public class MineAssistant extends JavaPlugin {
         try {
             ha = new HomeAssistant(url, token, this);
         } catch (URISyntaxException uriSyntaxException) {
-            getLogger().warning("Invalid URL");
+            logger.warning("Invalid URL");
         }
 
         updateHandler = new BlockUpdateHandler(ha, inputMode, links);
@@ -135,7 +138,7 @@ public class MineAssistant extends JavaPlugin {
         }
 
         links.add(target, haEntity);
-        getLogger().info(String.format(
+        logger.info(String.format(
                 "%s linked %s to Home Assistant entity '%s'",
                 player.getDisplayName(),
                 target.getBlockData().getAsString(),
@@ -195,6 +198,8 @@ public class MineAssistant extends JavaPlugin {
      * @param haState  The new state to apply to all linked blocks
      */
     private void updateBlocks(String entityID, String entityName, String haState) {
+        final ArrayList<BlockLocation> invalidLinks = new ArrayList<>();
+
         links.linkedBlocks(entityID, (LinkedBlock link) -> {
             final World world = getServer().getWorld(link.location.world);
 
@@ -203,6 +208,16 @@ public class MineAssistant extends JavaPlugin {
             }
 
             final Block targetBlock = world.getBlockAt(link.location.x, link.location.y, link.location.z);
+
+            if (!link.material.equals(targetBlock.getType().name())) {
+                // Block has been replaced
+                logger.warning(String.format(
+                        "Unlinking block %s from '%s' because it has been replaced with %s",
+                        link.material, entityID, targetBlock.getType().name()
+                ));
+                invalidLinks.add(link.location);
+                return;
+            }
 
             // signs. This all has to be done asynchronously, even just checking the block type.
             // so this could certainly be improved!
@@ -237,5 +252,7 @@ public class MineAssistant extends JavaPlugin {
                 }
             }
         });
+
+        invalidLinks.forEach(links::remove);
     }
 }
