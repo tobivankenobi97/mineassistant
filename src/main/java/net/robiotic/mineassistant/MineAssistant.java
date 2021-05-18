@@ -91,7 +91,7 @@ public class MineAssistant extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length > 2) {      // allow 2 args in case we want to link an entity that is already " (LINKED)"
+        if (args.length != 1 && args.length != 2) {      // allow 2 args in case we want to link an entity that is already " (LINKED)"
             return false;
         }
 
