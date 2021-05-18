@@ -15,6 +15,6 @@ commands:
   hass:
     description: Connect a redstone block to Home Assistant
     usage: /hass <entity>
-    permission: mineassistant.link
+    permission: hass.link
 load: POSTWORLD
 api-version: 1.16
