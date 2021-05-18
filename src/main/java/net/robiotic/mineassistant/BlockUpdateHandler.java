@@ -102,7 +102,7 @@ public class BlockUpdateHandler implements Listener {
             return; // Not linked
         }
 
-        if (!haEntity.contains("sensor.")) {
+        if (haEntity.contains("sensor.")) {
             event.setCancelled(true);
             return;
         }
