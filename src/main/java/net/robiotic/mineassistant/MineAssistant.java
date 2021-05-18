@@ -82,7 +82,11 @@ public class MineAssistant extends JavaPlugin {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        return ha.searchedEntities(args[0]);
+        final Player player = (Player) sender;
+        if (player.hasPermission(R.PERM_LINK)) {
+            return ha.searchedEntities(args[0]);
+        }
+        return List.of("You don't have permission to link Home Assistant entities");
     }
 
     @Override
