@@ -69,6 +69,19 @@ public class LinkStore {
     }
 
     /**
+     * Check if we have at least one block in the store linked to a Home Assistant entity.
+     *
+     * @param haEntity The entity ID to check for
+     * @return whether it was found or not
+     */
+    public boolean containsEntity(String haEntity) {
+        for (LinkedBlock block : blocks.values()) {
+            if (block.entity.equalsIgnoreCase(haEntity)) return true;
+        }
+        return false;
+    }
+
+    /**
      * Get the linked entity for a block at a specific location.
      *
      * @param block the block to get the entity for

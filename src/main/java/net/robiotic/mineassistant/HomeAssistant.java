@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import org.bukkit.ChatColor;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
@@ -55,17 +56,20 @@ public class HomeAssistant extends WebSocketClient {
     }
 
     /**
-     * Returns entity IDs that contain a search term
+     * Returns entity IDs that contain a search term. Append " (LINKED)" if it is found in the link store.
      *
      * @param partial string to search for in entity IDs
      * @return ArrayList of entity IDs that contain the partial string
      */
 
-    public ArrayList<String> searchedEntities(String partial) {
+    public ArrayList<String> searchedEntities(LinkStore links, String partial) {
         ArrayList<String> searchResults = new ArrayList<>();
         for (String s : allEntities) {
             if (s.contains(partial))
-                searchResults.add(s);
+                if (!links.containsEntity(s))
+                    searchResults.add(s);
+               else
+                    searchResults.add(s + " (LINKED)");
         }
         return searchResults;
     }

@@ -84,14 +84,14 @@ public class MineAssistant extends JavaPlugin {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         final Player player = (Player) sender;
         if (player.hasPermission(R.PERM_LINK)) {
-            return ha.searchedEntities(args[0]);
+            return ha.searchedEntities(links, args[0]);
         }
         return List.of("You don't have permission to link Home Assistant entities");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length != 1) {
+        if (args.length > 2) {      // allow 2 args in case we want to link an entity that is already " (LINKED)"
             return false;
         }
 
