@@ -1,8 +1,12 @@
 package net.robiotic.mineassistant;
 
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.*;
+import org.bukkit.block.data.FaceAttachable;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Powerable;
+import org.bukkit.block.data.type.Switch;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -47,6 +51,36 @@ public class BlockUpdateHandler implements Listener {
     }
 
     /**
+     * Find out if one block face has something attached to it (button, lever etc).
+     *
+     * @param anchorBlock The block with the potential attachments.
+     * @param bf The face of the block to check (up, down, north, south, east, west).
+     * @return true if the block has an attachment.
+     */
+    public boolean isAttached(Block anchorBlock, BlockFace bf) {
+        Block adjacentBlock = anchorBlock.getRelative(bf); // get the block we need to check
+        logger.info(adjacentBlock.getBlockData().getMaterial().toString());
+        if (FaceAttachable.class.isAssignableFrom(adjacentBlock.getBlockData().getClass())) {
+            // it's an "attachable"
+            String face = BlockUtil.getBlockDataTag(adjacentBlock.getBlockData(), "face");        // floor, ceiling, wall
+            String facing = BlockUtil.getBlockDataTag(adjacentBlock.getBlockData(), "facing");    // north, south, east, west
+            // detect top and bottom first, we don't care about the compass direction for these
+            if (face.equals("floor") && bf.equals(BlockFace.UP)) return true;
+            if (face.equals("ceiling") && bf.equals(BlockFace.DOWN)) return true;
+            // detect compass directions; face=="wall" for all of these so look at the "facing" tag instead
+            return facing.equals(bf.name().toLowerCase());
+        } else if (adjacentBlock.getBlockData().getMaterial().toString().endsWith("_WALL_SIGN")) {
+            // wall signs can only be facing N/S/E/W, check if that matches our anchor block
+            String facing = BlockUtil.getBlockDataTag(adjacentBlock.getBlockData(), "facing");    // north, south, east, west
+            return facing.equals(bf.name().toLowerCase());
+        } else if (adjacentBlock.getBlockData().getMaterial().toString().endsWith("_SIGN")) {
+            // signs can only be on top
+            return bf == BlockFace.UP;
+        }
+        return false;
+    }
+
+    /**
      * Detect a block being broken by a player. If the block is linked to HA, remove it from the link store.
      *
      * @param event The block break event
@@ -55,6 +89,23 @@ public class BlockUpdateHandler implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         final Block block = event.getBlock();
         final String haEntity = links.getEntity(block);
+
+        // Check for any attached blocks that will be broken as well (these don't raise a break event of their own)
+        for (BlockFace bf : R.attachmentPoints.keySet()) {
+            if (isAttached(block, bf)) {
+                final String attachedEntity = links.getEntity(block.getRelative(bf));
+                if (attachedEntity != null) {
+                    // Attached block is in the link store - remove it
+                    BlockLocation bLoc = new BlockLocation(block.getRelative(bf));
+                    links.remove(bLoc);
+                    event.getPlayer().sendMessage(String.format(
+                            "an attached %s was broken and unlinked from '%s'",
+                            block.getRelative(bf).getBlockData().getMaterial().name(),
+                            attachedEntity
+                    ));
+                }
+            }
+        }
 
         if (haEntity == null) {
             return; // Not linked
@@ -83,6 +134,14 @@ public class BlockUpdateHandler implements Listener {
             return; // Not in the 'interact' input mode
         }
 
+        final Block block = event.getClickedBlock();
+
+        if (block == null) {
+            return;
+        }
+
+
+
         final Player player = event.getPlayer();
 
         if (!player.hasPermission(R.PERM_USE)) {
@@ -90,11 +149,7 @@ public class BlockUpdateHandler implements Listener {
             return;
         }
 
-        final Block block = event.getClickedBlock();
 
-        if (block == null) {
-            return;
-        }
 
         final String haEntity = links.getEntity(block);
 

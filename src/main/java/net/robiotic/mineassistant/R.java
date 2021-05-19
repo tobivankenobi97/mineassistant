@@ -1,7 +1,9 @@
 package net.robiotic.mineassistant;
 
 import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
 
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Map.entry;
@@ -100,6 +102,16 @@ abstract class R {
             entry(Material.SPRUCE_FENCE_GATE, LinkType.SYNC),
             entry(Material.WARPED_FENCE_GATE, LinkType.SYNC)
     );
+
+    static final Map<BlockFace, String> attachmentPoints = Map.of (
+            BlockFace.UP, "floor",
+            BlockFace.DOWN, "ceiling",
+            BlockFace.NORTH, "north",
+            BlockFace.SOUTH, "south",
+            BlockFace.EAST, "east",
+            BlockFace.WEST, "west"
+    );
+    static final List<BlockFace> cardinalFaces = List.of(BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST);
 }
 
 enum LinkType {

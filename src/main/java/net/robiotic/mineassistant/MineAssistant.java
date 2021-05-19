@@ -247,7 +247,7 @@ public class MineAssistant extends JavaPlugin {
                 // powerable thing: lever, button etc
                 Bukkit.getScheduler().runTask(this, () -> BlockUtil.setPowered(targetBlock, newState));
 
-                if (BlockUtil.isPowered(targetBlock) != newState) {
+                if (BlockUtil.isPowered(targetBlock) == newState) {             // hack to the max
                     BlockUtil.makeSound(targetBlock, newState);
                 }
             }
