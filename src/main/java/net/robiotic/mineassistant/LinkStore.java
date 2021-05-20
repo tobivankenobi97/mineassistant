@@ -31,7 +31,13 @@ public class LinkStore {
         try {
             final FileReader reader = new FileReader(file);
             final ArrayList<LinkedBlock> values = gson.fromJson(reader, storedType);
-            blocks = values.stream().collect(Collectors.toMap(lb -> lb.location, lb -> lb));
+
+            if (values == null) {
+                blocks = new HashMap<>();
+            } else {
+                blocks = values.stream().collect(Collectors.toMap(lb -> lb.location, lb -> lb));
+            }
+
             reader.close();
         } catch (IOException exception) {
             if (!(exception instanceof FileNotFoundException)) {
