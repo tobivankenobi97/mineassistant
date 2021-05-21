@@ -163,7 +163,11 @@ public class MineAssistant extends JavaPlugin {
             final JsonObject obj = state.getAsJsonObject();
             final String entityID = obj.get("entity_id").getAsString();
             final String haState = obj.get("state").getAsString();
-            final String haName = obj.getAsJsonObject("attributes").get("friendly_name").getAsString();
+            String haName;
+            if (obj.getAsJsonObject("attributes").has("friendly_name"))
+                haName = obj.getAsJsonObject("attributes").get("friendly_name").getAsString();
+            else
+                haName = entityID;
 
             // Iterate through the list of blocks this entity is linked to
             updateBlocks(entityID, haName, haState);
