@@ -61,6 +61,7 @@ public class MineAssistant extends JavaPlugin {
         // Connect to Home Assistant
         ha.connect();
 
+        ha.startReconnectTimer();
         // Start listening for block events
         getServer().getPluginManager().registerEvents(updateHandler, this);
     }

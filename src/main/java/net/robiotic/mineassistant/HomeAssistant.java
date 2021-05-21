@@ -4,8 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -17,6 +20,7 @@ import java.util.logging.Logger;
 public class HomeAssistant extends WebSocketClient {
     private final Gson gson = new Gson();
     private final Logger logger = Logger.getLogger("Home Assistant");
+    private boolean isReconnecting=false;
     private final MineAssistant ma;
 
     /**
@@ -51,6 +55,7 @@ public class HomeAssistant extends WebSocketClient {
 
         this.ma = ma;
         this.token = token;
+        isReconnecting=false;
     }
 
     /**
@@ -72,19 +77,36 @@ public class HomeAssistant extends WebSocketClient {
         return searchResults;
     }
 
+    public void startReconnectTimer() {
+            Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(ma, new Runnable() {
+                public void run() {
+                    if (isReconnecting) {
+                        reconnect();
+                    }
+                }
+            }, 20L, 20L);
+    }
+
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        logger.info("Home Assistant socket opened");
+        if (isReconnecting)
+            logger.info("Home Assistant socket re-opened");
+        else
+            logger.info("Home Assistant socket opened");
+        isReconnecting=false;
     }
 
     @Override
     public void onClose(int i, String s, boolean b) {
-        logger.info("Home Assistant socket closed");
+        if (!isReconnecting)        // don't spam logs with this message if we are trying to reconnect
+            logger.info("Home Assistant socket closed! Attempting reconnect...");
+        isReconnecting=true;
     }
 
     @Override
     public void onError(Exception e) {
-        logger.warning("Home Assistant socket error: " + e.toString());
+        if (!isReconnecting)           // don't spam this if we're trying to reconnect
+            logger.warning("Home Assistant socket error: " + e.toString());
     }
 
     @Override
