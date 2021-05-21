@@ -14,6 +14,7 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
+import java.util.Locale;
 import java.util.logging.Logger;
 
 public class BlockUpdateHandler implements Listener {
@@ -59,7 +60,6 @@ public class BlockUpdateHandler implements Listener {
      */
     public boolean isAttached(Block anchorBlock, BlockFace bf) {
         Block adjacentBlock = anchorBlock.getRelative(bf); // get the block we need to check
-        logger.info(adjacentBlock.getBlockData().getMaterial().toString());
         if (FaceAttachable.class.isAssignableFrom(adjacentBlock.getBlockData().getClass())) {
             // it's an "attachable"
             String face = BlockUtil.getBlockDataTag(adjacentBlock.getBlockData(), "face");        // floor, ceiling, wall
@@ -99,9 +99,9 @@ public class BlockUpdateHandler implements Listener {
                     BlockLocation bLoc = new BlockLocation(block.getRelative(bf));
                     links.remove(bLoc);
                     event.getPlayer().sendMessage(String.format(
-                            "an attached %s was broken and unlinked from '%s'",
-                            block.getRelative(bf).getBlockData().getMaterial().name(),
-                            attachedEntity
+                            "'%s' unlinked from %s",
+                            attachedEntity,
+                            block.getRelative(bf).getBlockData().getMaterial().name().toLowerCase().replace("_", " ")
                     ));
                 }
             }
@@ -113,9 +113,9 @@ public class BlockUpdateHandler implements Listener {
 
         links.remove(new BlockLocation(block));
         event.getPlayer().sendMessage(String.format(
-                "%s was broken and unlinked from '%s'",
-                block.getBlockData().getMaterial().name(),
-                haEntity
+                "'%s' unlinked from %s",
+                haEntity,
+                block.getBlockData().getMaterial().name().toLowerCase().replace("_", " ")
         ));
     }
 
@@ -140,16 +140,12 @@ public class BlockUpdateHandler implements Listener {
             return;
         }
 
-
-
         final Player player = event.getPlayer();
 
         if (!player.hasPermission(R.PERM_USE)) {
             event.setCancelled(true);
             return;
         }
-
-
 
         final String haEntity = links.getEntity(block);
 
