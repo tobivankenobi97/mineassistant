@@ -164,11 +164,11 @@ public class MineAssistant extends JavaPlugin {
             final JsonObject obj = state.getAsJsonObject();
             final String entityID = obj.get("entity_id").getAsString();
             final String haState = obj.get("state").getAsString();
-            String haName;
-            if (obj.getAsJsonObject("attributes").has("friendly_name"))
-                haName = obj.getAsJsonObject("attributes").get("friendly_name").getAsString();
-            else
-                haName = entityID;
+
+            final JsonObject attributes = obj.getAsJsonObject("attributes");
+            final String haName = attributes.has("friendly_name")
+                    ? attributes.get("friendly_name").getAsString()
+                    : entityID;
 
             // Iterate through the list of blocks this entity is linked to
             updateBlocks(entityID, haName, haState);
@@ -189,7 +189,11 @@ public class MineAssistant extends JavaPlugin {
 
             final JsonObject newState = evData.getAsJsonObject("new_state");
             final String haState = newState.getAsJsonPrimitive("state").getAsString();
-            final String haName = newState.getAsJsonObject("attributes").get("friendly_name").getAsString();
+
+            final JsonObject attributes = newState.getAsJsonObject("attributes");
+            final String haName = attributes.has("friendly_name")
+                    ? attributes.get("friendly_name").getAsString()
+                    : entityID;
 
             // Iterate through the list of blocks this entity is linked to
             updateBlocks(entityID, haName, haState);
