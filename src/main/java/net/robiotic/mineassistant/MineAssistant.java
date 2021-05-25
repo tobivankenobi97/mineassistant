@@ -247,7 +247,7 @@ public class MineAssistant extends JavaPlugin {
             Bukkit.getScheduler().runTask(this, () -> {
                 BlockState state = targetBlock.getState();
                 if (state instanceof Sign) {
-                    // TODO: maybe some escape codes for multiple lines, or word wrapping?
+
                     Sign sign = (Sign) state;
 
                     if (!haState.contains("\\L")) {
@@ -267,7 +267,7 @@ public class MineAssistant extends JavaPlugin {
                             }
                         }
                         for (int i = 0; i <= 3; i++) {
-                            sign.setLine(i , ChatColor.translateAlternateColorCodes('&',signLines[i]));
+                            sign.setLine(i , ChatColor.translateAlternateColorCodes('&',signLines[i]).replaceFirst("\\s++$", ""));
                         }
                     }
                     sign.update();
