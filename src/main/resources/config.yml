@@ -2,6 +2,7 @@
 # Format: <protocol (http, https)>//<host>:[port (defaults to 80 for http or 443 for https)]
 # For example:
 # - https://home-assistant.robiotic.net
+# - https://abcdefghijklmnopqrstuvwxyz.ui.nabu.casa
 # - http://hassio.local:8123
 # - http://192.168.2.93:8123
 ha_url: ''
