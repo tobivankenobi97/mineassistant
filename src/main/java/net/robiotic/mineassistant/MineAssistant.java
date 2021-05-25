@@ -263,11 +263,11 @@ public class MineAssistant extends JavaPlugin {
                             if (line.length()>0) {
                                 int ln = Character.getNumericValue(line.charAt(0));
                                 if (ln>=1 && ln <=4)
-                                    signLines[ln - 1] += line.substring(1);
+                                    signLines[ln - 1] += line.substring(1).replaceFirst("\\s++$", "");
                             }
                         }
                         for (int i = 0; i <= 3; i++) {
-                            sign.setLine(i , ChatColor.translateAlternateColorCodes('&',signLines[i]).replaceFirst("\\s++$", ""));
+                            sign.setLine(i , ChatColor.translateAlternateColorCodes('&',signLines[i]));
                         }
                     }
                     sign.update();
