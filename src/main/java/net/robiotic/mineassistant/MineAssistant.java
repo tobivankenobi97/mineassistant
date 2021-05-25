@@ -1,6 +1,8 @@
 package net.robiotic.mineassistant;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -22,7 +24,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 public class MineAssistant extends JavaPlugin {
     private final Logger logger = getLogger();
@@ -182,12 +186,22 @@ public class MineAssistant extends JavaPlugin {
      * @param event the JsonObject of an event from HA
      */
     public void updateBlocksFromSubscription(JsonObject event) {
+//        logger.info(event.toString());
         if (event.get("event_type").getAsString().equals("state_changed")) {
             // Home Assistant has flipped something on or off
             final JsonObject evData = event.getAsJsonObject("data");
             final String entityID = evData.get("entity_id").getAsString();
 
-            final JsonObject newState = evData.getAsJsonObject("new_state");
+            if (!evData.has("new_state"))
+                return;
+
+            if (evData.get("new_state").isJsonNull())
+                return;
+
+            final JsonObject newState = evData.has("new_state")
+                    ? evData.getAsJsonObject("new_state")
+                    : evData.getAsJsonObject("state");
+
             final String haState = newState.getAsJsonPrimitive("state").getAsString();
 
             final JsonObject attributes = newState.getAsJsonObject("attributes");
@@ -235,8 +249,27 @@ public class MineAssistant extends JavaPlugin {
                 if (state instanceof Sign) {
                     // TODO: maybe some escape codes for multiple lines, or word wrapping?
                     Sign sign = (Sign) state;
-                    sign.setLine(1, ChatColor.translateAlternateColorCodes('&', "&3" + entityName));
-                    sign.setLine(2, haState);
+
+                    if (!haState.contains("\\L")) {
+                        // No escape codes detected. Show name/entity_id on line 1 and state on line 2
+                        sign.setLine(1, ChatColor.translateAlternateColorCodes('&', "&3" + entityName));
+                        sign.setLine(2, haState);
+                    } else {
+                        // use escape codes \Lx to address different lines of the sign
+                        String[] escSplit= haState.split (Pattern.quote("\\L"));
+                        String[] signLines = new String[]{"","","",""};
+
+                        for (String line : escSplit) {
+                            if (line.length()>0) {
+                                int ln = Character.getNumericValue(line.charAt(0));
+                                if (ln>=1 && ln <=4)
+                                    signLines[ln - 1] += line.substring(1);
+                            }
+                        }
+                        for (int i = 0; i <= 3; i++) {
+                            sign.setLine(i , ChatColor.translateAlternateColorCodes('&',signLines[i]));
+                        }
+                    }
                     sign.update();
                 }
             });
