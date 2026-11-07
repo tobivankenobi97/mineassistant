@@ -1,13 +1,13 @@
 name: MineAssistant
 description: Links Home Assistant to redstone
 main: net.robiotic.mineassistant.MineAssistant
-version: 1.0-SNAPSHOT
+version: "1.2.0"
 author: klikini
 website: https://gitlab.com/klikini/mineassistant
 permissions:
   hass.link:
     description: Allows linking redstone blocks to Home Assistant
-    default: false
+    default: op
   hass.use:
     description: Allows changing the state of redstone blocks linked to Home Assistant
     default: true
@@ -16,5 +16,6 @@ commands:
     description: Connect a redstone block to Home Assistant
     usage: /hass <entity>
     permission: hass.link
+    permission-message: You don't have permission to link Home Assistant entities
 load: POSTWORLD
-api-version: 1.16
+api-version: "26.3"

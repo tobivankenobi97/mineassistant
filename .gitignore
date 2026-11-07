@@ -1,2 +1,7 @@
 /.idea/
 /target/
+
+# A filled-in server config holds the Home Assistant token. Never commit it.
+# The empty sample that ships with the plugin is src/main/resources/config.yml.
+/config.yml
+/plugins/

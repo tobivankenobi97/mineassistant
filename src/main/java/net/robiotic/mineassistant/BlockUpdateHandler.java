@@ -68,13 +68,17 @@ public class BlockUpdateHandler implements Listener {
             if (face.equals("floor") && bf.equals(BlockFace.UP)) return true;
             if (face.equals("ceiling") && bf.equals(BlockFace.DOWN)) return true;
             // detect compass directions; face=="wall" for all of these so look at the "facing" tag instead
-            return facing.equals(bf.name().toLowerCase());
-        } else if (adjacentBlock.getBlockData().getMaterial().toString().endsWith("_WALL_SIGN")) {
-            // wall signs can only be facing N/S/E/W, check if that matches our anchor block
-            String facing = BlockUtil.getBlockDataTag(adjacentBlock.getBlockData(), "facing");    // north, south, east, west
-            return facing.equals(bf.name().toLowerCase());
-        } else if (adjacentBlock.getBlockData().getMaterial().toString().endsWith("_SIGN")) {
-            // signs can only be on top
+            return facing.equals(bf.name().toLowerCase(Locale.ROOT));
+        }
+
+        final String materialName = adjacentBlock.getType().name();
+        if (materialName.endsWith("_WALL_HANGING_SIGN") || materialName.endsWith("_WALL_SIGN")) {
+            // wall signs face away from the block they are attached to
+            String facing = BlockUtil.getBlockDataTag(adjacentBlock.getBlockData(), "facing");
+            return facing.equals(bf.name().toLowerCase(Locale.ROOT));
+        } else if (materialName.endsWith("_HANGING_SIGN")) {
+            return bf == BlockFace.DOWN;
+        } else if (materialName.endsWith("_SIGN")) {
             return bf == BlockFace.UP;
         }
         return false;

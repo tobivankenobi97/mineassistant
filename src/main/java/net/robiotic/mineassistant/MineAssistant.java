@@ -90,11 +90,10 @@ public class MineAssistant extends JavaPlugin {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        final Player player = (Player) sender;
-        if (player.hasPermission(R.PERM_LINK)) {
-            return ha.searchedEntities(links, args[0]);
+        if (!(sender instanceof Player player) || ha == null || args.length == 0 || !player.hasPermission(R.PERM_LINK)) {
+            return List.of();
         }
-        return List.of("You don't have permission to link Home Assistant entities");
+        return ha.searchedEntities(links, args[0]);
     }
 
     @Override
@@ -164,6 +163,10 @@ public class MineAssistant extends JavaPlugin {
      * @param states the 'result' array from the HA states dump
      */
     public void updateBlocksFromDump(JsonArray states) {
+        runOnServer(() -> applyStatesDump(states));
+    }
+
+    private void applyStatesDump(JsonArray states) {
         states.forEach(state -> {
             final JsonObject obj = state.getAsJsonObject();
             final String entityID = obj.get("entity_id").getAsString();
@@ -186,7 +189,10 @@ public class MineAssistant extends JavaPlugin {
      * @param event the JsonObject of an event from HA
      */
     public void updateBlocksFromSubscription(JsonObject event) {
-//        logger.info(event.toString());
+        runOnServer(() -> applySubscription(event));
+    }
+
+    private void applySubscription(JsonObject event) {
         if (event.get("event_type").getAsString().equals("state_changed")) {
             // Home Assistant has flipped something on or off
             final JsonObject evData = event.getAsJsonObject("data");
@@ -296,5 +302,19 @@ public class MineAssistant extends JavaPlugin {
         });
 
         invalidLinks.forEach(links::remove);
+    }
+
+    /**
+     * Home Assistant messages arrive on the websocket thread. Block access has to run on the server thread.
+     */
+    private void runOnServer(Runnable action) {
+        if (!isEnabled()) {
+            return;
+        }
+        if (Bukkit.isPrimaryThread()) {
+            action.run();
+        } else {
+            Bukkit.getScheduler().runTask(this, action);
+        }
     }
 }
